@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import pickle
 import struct
+import threading
 
 class server:
 
@@ -90,14 +91,27 @@ class server:
         print('The server is ready to receive')
         while True:
             connectionSocket, addr = serverSocket.accept()
-            dataRec = connectionSocket.recv(1024)
-            header,msg=protocol.decodeMsg(dataRec.decode()) # get client's info, parse it to header and content
-            # Main logic of the program, send different content to client according to client's requests
-            if(header==protocol.HEAD_REQUEST):
-                self.send_frames(connectionSocket, msg)
-            else:
-                connectionSocket.send(protocol.prepareMsg(protocol.HEAD_ERROR, "Invalid Message"))
-            connectionSocket.close()
+            thread = threading.Thread(target=handle_thread, args=(connectionSocket, addr))
+            thread.start()
+
+def handle_thread(connectionSocket, addr):
+    # Main logic of the program, send different content to client according to client's requests
+    CONNECTED = True
+    while CONNECTED:
+        dataRec = connectionSocket.recv(1024)
+        header,msg=protocol.decodeMsg(dataRec.decode()) # get client's info, parse it to header and content
+
+        if(header==protocol.HEAD_REQUEST):
+            server.send_frames(connectionSocket, msg)
+        elif(header==protocol.HEAD_DISCONNECT):
+            CONNECTED = False
+        elif(header==protocol.HEAD_CONN):
+            continue
+        else:
+            connectionSocket.send(protocol.prepareMsg(protocol.HEAD_ERROR, "Invalid Message"))
+
+    connectionSocket.close()
+            
 
 def main():
     s=server()

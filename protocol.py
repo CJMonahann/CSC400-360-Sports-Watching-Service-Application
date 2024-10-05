@@ -4,6 +4,8 @@
 
 #defines the protocol header
 HEAD_REQUEST='REQ'
+HEAD_DISCONNECT = 'DIS'
+HEAD_CONN = 'CON'
 HEAD_ERROR='ERR'
 
 # we prepare the message that are sent between server and client as the header + content
