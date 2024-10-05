@@ -33,18 +33,6 @@ class Client:
         clientSocket.connect((serverName,serverPort))
         return clientSocket
     
-    def status_conn(self):
-         return self.conn
-    
-    def set_conn(self):
-         self.conn = False
-
-    def get_count(self):
-         return self.count
-    
-    def inc_count(self):
-         self.count += 1
-    
     def get_camera(self, camera):
         mySocket=self.connect()
         mySocket.send(protocol.prepareMsg(protocol.HEAD_REQUEST,camera))
@@ -52,7 +40,7 @@ class Client:
         data = b""
         payload_size = struct.calcsize("Q")
 
-        while self.status_conn():
+        while True:
             
             while len(data) < payload_size:
                 packet = mySocket.recv(4*1024) #4k
