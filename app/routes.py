@@ -21,16 +21,3 @@ def video(MXID):
     except:
         new_url = f'/video/CAM-<string:{MXID}>'
         return redirect(new_url)
-    
-    '''
-    finally:
-        new_url = f'/video/CAM-<string:{MXID}>'
-        return redirect(new_url)
-    '''
-
-    '''
-    else:
-        socket.set_conn()
-        new_url = f'/video/CAM-<string:{MXID}>'
-        return redirect(new_url)
-    '''
