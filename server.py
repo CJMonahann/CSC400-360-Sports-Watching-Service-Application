@@ -28,6 +28,9 @@ class server:
     
     # Main function of server, start the file sharing service
     def start(self):
+        pipeline = create_pipeline()
+        all_cameras = create_all_pipelines(pipeline)
+        print(all_cameras)
         serverPort=self.port
         serverSocket=socket(AF_INET,SOCK_STREAM)
         serverSocket.bind(('',serverPort))
@@ -35,13 +38,11 @@ class server:
         print('The server is ready to receive')
         while True:
             connectionSocket, addr = serverSocket.accept()
-            thread = threading.Thread(target=handle_thread, args=[connectionSocket, addr])
+            thread = threading.Thread(target=handle_thread, args=[connectionSocket, addr, pipeline, all_cameras])
             thread.start()
 
-def send_frames(serverSocket, CAM):
-    print("message 2 - ", CAM)
-    MXID = CAM
 
+def create_pipeline():
     #define camera height and width
     width = 600
     height = 500
@@ -61,20 +62,23 @@ def send_frames(serverSocket, CAM):
     xout_rgb.setStreamName("rgb")
     cam_rgb.preview.link(xout_rgb.input)
 
-    # This code only gets the frame from a single camera. 
-    # Need to do: how to define a particular camera and get its stream
-    #             how to setup ip addresses for the camera
-    # 
+    return pipeline
 
-    # Connect to multiple devices to get device information
+def create_all_pipelines(pipeline):
+    #dictionary to store the pipeline alongside a camera connection
+    all_cameras = {}
 
     for device in depthai.Device.getAllAvailableDevices():
-        print(f"{device.getMxId()} {device.state}")
+        MXID = device.getMxId()
+        all_cameras[MXID] = depthai.DeviceInfo(MXID) # MXID
+    
+    return all_cameras
 
-    # Specify MXID, IP Address or USB path
-    device_info = depthai.DeviceInfo(MXID) # MXID
+
+def send_frames(serverSocket, MXID, pipeline, all_cameras):
 
     #pick a particular device
+    device_info = all_cameras[MXID]
 
     with depthai.Device(pipeline,device_info) as device:
         CONST = 255
@@ -94,7 +98,7 @@ def send_frames(serverSocket, CAM):
             if cv2.waitKey(1) == ord('q'):
                 break
 
-def handle_thread(connectionSocket, addr):
+def handle_thread(connectionSocket, addr, pipeline, all_cameras):
     # Main logic of the program, send different content to client according to client's requests
     dataRec = connectionSocket.recv(1024)
     header,msg=protocol.decodeMsg(dataRec.decode()) # get client's info, parse it to header and content
@@ -103,7 +107,7 @@ def handle_thread(connectionSocket, addr):
     while CONNECTED:
 
         if(header==protocol.HEAD_REQUEST):
-            send_frames(connectionSocket, msg)
+            send_frames(connectionSocket, msg, pipeline, all_cameras)
         elif(header==protocol.HEAD_DISCONNECT):
             CONNECTED = False
         elif(header==protocol.HEAD_CONN):
@@ -111,8 +115,7 @@ def handle_thread(connectionSocket, addr):
         else:
             connectionSocket.send(protocol.prepareMsg(protocol.HEAD_ERROR, "Invalid Message"))
 
-    connectionSocket.close()
-            
+    connectionSocket.close()      
 
 def main():
     s=server()
