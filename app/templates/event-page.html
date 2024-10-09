@@ -1,0 +1,30 @@
+{% extends "parent-templates/base-content.html" %}
+{%block title %} Event Page {% endblock %}
+
+{% block content %}
+<main class="main-content-container">
+  <section class="camera-info-containter">
+      <div class="main-camera">
+          <p class="h2 cam-heading">Live Feed</p>
+          <img style="height: 50%" class="main-feed">
+      </div>
+      <div class="camera-buttons-container">
+          <button class="btn btn-sm btn-info select-button" data-mxid="1944301071EC6E1300">Cam 1</button>
+          <button class="btn btn-sm btn-light select-button" data-mxid="19443010C1ED201300">Cam 2</button>
+          <button class="btn btn-sm btn-dark select-button" data-mxid="3">Cam 3</button>
+      </div>
+  </section>
+  <section class="event-info-container">
+      <p class="h2">
+          Game Event Title
+      </p>
+      <p>
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem ipsum perferendis dignissimos itaque quidem est earum optio nihil quaerat voluptas voluptatibus, ad quo quas doloremque assumenda iste adipisci sint corporis.
+      </p>
+  </section>
+</main>
+{% endblock %}
+
+{% block additional_scripts %}
+<script src="{{url_for('static', filename='javascript/camera.js')}}"></script>
+{% endblock %}
