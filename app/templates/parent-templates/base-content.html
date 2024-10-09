@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title> {% block title %}{% endblock %}</title>
     <!-- Bootstrap's CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/general.css')}}">
@@ -32,27 +32,8 @@
         </div>
       </nav>
 
-      <main class="main-content-container">
-        <section class="camera-info-containter">
-            <div class="main-camera">
-                <p class="h2 cam-heading">Live Feed</p>
-                <img style="height: 50%" class="main-feed">
-            </div>
-            <div class="camera-buttons-container">
-                <button class="btn btn-sm btn-info select-button" data-mxid="1944301071EC6E1300">Cam 1</button>
-                <button class="btn btn-sm btn-light select-button" data-mxid="19443010C1ED201300">Cam 2</button>
-                <button class="btn btn-sm btn-dark select-button" data-mxid="3">Cam 3</button>
-            </div>
-        </section>
-        <section class="event-info-container">
-            <p class="h2">
-                Game Event Title
-            </p>
-            <p>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem ipsum perferendis dignissimos itaque quidem est earum optio nihil quaerat voluptas voluptatibus, ad quo quas doloremque assumenda iste adipisci sint corporis.
-            </p>
-        </section>
-      </main>
+        {% block content %}
+        {% endblock %}
 
       <footer class="bg-light main-footer">
         <p>360&deg; Sports Watching Service</p>
@@ -63,6 +44,8 @@
     <!-- Scripts for Bootstrap's JavaScript Functionality -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
-    <script src="{{url_for('static', filename='javascript/camera.js')}}"></script>
+
+    {% block additional_scripts %}
+    {% endblock %}
 </body>
 </html>
