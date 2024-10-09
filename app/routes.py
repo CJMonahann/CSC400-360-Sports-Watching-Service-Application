@@ -1,5 +1,7 @@
-from flask import Flask, render_template, redirect, url_for, request, jsonify, Response
-from app import app
+from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
+from app import app, db
+from app.models import Accounts #imports like this will import the databse relations we have made in the 'models.py' page
+from app.forms import signUpForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
