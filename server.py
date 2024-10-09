@@ -19,6 +19,7 @@ from PIL import Image
 import pickle
 import struct
 import threading
+import contextlib
 
 class server:
 
@@ -28,9 +29,8 @@ class server:
     
     # Main function of server, start the file sharing service
     def start(self):
-        pipeline = create_pipeline()
-        all_cameras = create_all_pipelines(pipeline)
-        print(all_cameras)
+        devices = connect_all_devices()
+        print(devices)
         serverPort=self.port
         serverSocket=socket(AF_INET,SOCK_STREAM)
         serverSocket.bind(('',serverPort))
@@ -38,9 +38,47 @@ class server:
         print('The server is ready to receive')
         while True:
             connectionSocket, addr = serverSocket.accept()
-            thread = threading.Thread(target=handle_thread, args=[connectionSocket, addr, pipeline, all_cameras])
+            thread = threading.Thread(target=handle_thread, args=[connectionSocket, addr, devices])
             thread.start()
 
+def worker(device_info, stack, devices):
+    openvino_version = depthai.OpenVINO.Version.VERSION_2021_4
+    usb2_mode = False
+    device = stack.enter_context(depthai.Device(openvino_version, device_info, usb2_mode))
+
+    # Note: currently on POE, DeviceInfo.getMxId() and Device.getMxId() are different!
+    print("=== Connected to " + device_info.getMxId())
+    device.startPipeline(create_pipeline())
+
+    # Output queue will be used to get the rgb frames from the output defined above
+    devices[device.getMxId()] = device
+    
+    '''
+    {
+        'rgb': device #device.getOutputQueue(name="rgb"),
+    }
+    '''
+
+def connect_all_devices():
+    with contextlib.ExitStack() as stack:
+        device_infos = depthai.Device.getAllAvailableDevices()
+        if len(device_infos) == 0:
+            raise RuntimeError("No devices found!")
+        else:
+            print("Found", len(device_infos), "devices")
+        devices = {}
+        threads = []
+
+        for device_info in device_infos:
+            time.sleep(1) # Currently required due to XLink race issues
+            thread = threading.Thread(target=worker, args=(device_info, stack, devices))
+            thread.start()
+            threads.append(thread)
+
+        for t in threads:
+            t.join() # Wait for all threads to finish (to connect to devices)
+        
+        return devices
 
 def create_pipeline():
     #define camera height and width
@@ -75,8 +113,23 @@ def create_all_pipelines(pipeline):
     return all_cameras
 
 
-def send_frames(serverSocket, MXID, pipeline, all_cameras):
+def send_frames(serverSocket, MXID, devices):
+    print("made it to send frames FUNCTION!")
+    device = devices[MXID]
+    device.getOutputQueue(name="rgb")
 
+    '''
+    while True:
+            if frame is not None:
+                a = pickle.dumps(frame)
+                message = struct.pack("Q", len(a)) + a
+                serverSocket.sendall(message) #send frame data
+                
+            if cv2.waitKey(1) == ord('q'):
+                break
+    '''
+
+    '''
     #pick a particular device
     device_info = all_cameras[MXID]
 
@@ -97,8 +150,9 @@ def send_frames(serverSocket, MXID, pipeline, all_cameras):
                 
             if cv2.waitKey(1) == ord('q'):
                 break
+    '''
 
-def handle_thread(connectionSocket, addr, pipeline, all_cameras):
+def handle_thread(connectionSocket, addr, devices):
     # Main logic of the program, send different content to client according to client's requests
     dataRec = connectionSocket.recv(1024)
     header,msg=protocol.decodeMsg(dataRec.decode()) # get client's info, parse it to header and content
@@ -107,7 +161,7 @@ def handle_thread(connectionSocket, addr, pipeline, all_cameras):
     while CONNECTED:
 
         if(header==protocol.HEAD_REQUEST):
-            send_frames(connectionSocket, msg, pipeline, all_cameras)
+            send_frames(connectionSocket, msg, devices)
         elif(header==protocol.HEAD_DISCONNECT):
             CONNECTED = False
         elif(header==protocol.HEAD_CONN):
