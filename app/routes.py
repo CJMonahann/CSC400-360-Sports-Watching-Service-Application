@@ -14,8 +14,12 @@ import pickle
 def index():
     return render_template('index.html')
 
-times_selected = 0
+
 @app.route('/video/CAM-<string:MXID>')
 def video(MXID):
-    socket = client.Client()
-    return Response(socket.get_camera(MXID), mimetype='multipart/x-mixed-replace; boundary=frame')
+    try:
+        socket = client.Client()
+        return Response(socket.get_camera(MXID), mimetype='multipart/x-mixed-replace; boundary=frame')
+    except:
+        new_url = f'/video/CAM-<string:{MXID}>'
+        return redirect(new_url)

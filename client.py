@@ -21,6 +21,9 @@ class Client:
     #Constructor: load client configuration from config file
     def __init__(self):
         self.serverName, self.serverPort, self.clientPort = config.config().readClientConfig()
+        self.conn = True
+        self.count = 0
+
 
     # Build connection to server
     def connect(self):
@@ -38,6 +41,7 @@ class Client:
         payload_size = struct.calcsize("Q")
 
         while True:
+            
             while len(data) < payload_size:
                 packet = mySocket.recv(4*1024) #4k
                 if not packet: break
@@ -55,6 +59,10 @@ class Client:
             final_frame = new_frame.tobytes()
             yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + final_frame + b'\r\n')
 
+            #send new message saying to continue
+            mySocket.send(protocol.prepareMsg(protocol.HEAD_CONN,''))
+
             if cv2.waitKey(1) == ord('q'):
                     break
-        mySocket.close()
+        
+        mySocket.send(protocol.prepareMsg(protocol.HEAD_DISCONNECT,''))
