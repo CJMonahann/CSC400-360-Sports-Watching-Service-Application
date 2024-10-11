@@ -11,9 +11,14 @@ import client
 import pickle
 
 @app.route('/')
+@app.route('/home')
+@app.route('/HOME')
 def index():
-    return render_template('event-page.html')
+    return render_template('index.html')
 
+@app.route('/event-page')
+def event_page():
+    return render_template('event-page.html')
 
 @app.route('/video/CAM-<string:MXID>')
 def video(MXID):
