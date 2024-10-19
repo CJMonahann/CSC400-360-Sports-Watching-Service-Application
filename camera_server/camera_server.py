@@ -169,8 +169,8 @@ def start_cameras(server_IP, server_port, timer_obj):
             t.join()
         
 def main():
-    t = Timer(2) #default of 30 seconds for camera record time when no argument is passed
-    start_cameras('192.168.1.132', 1200, t)
+    t = Timer() #default of 30 seconds for camera record time when no argument is passed
+    start_cameras('192.168.1.132', 12000, t)
 
 if __name__ == "__main__":
     main()

@@ -13,8 +13,9 @@ s_buffers = {}
 
 class StreamingServer:
      def __init__(self):
-          self.address= ("192.168.1.132", 1200) 
+          self.address= ("192.168.1.132", 12000) 
           self.BUFFER = 65536
+          self.packet_delay = 0.045 #of a second
         
      def start(self):
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -22,7 +23,6 @@ class StreamingServer:
           server.bind(self.address)
 
           print("The server is ready to recieve")
-          v = 0
           while True:
                rec_data, addr = server.recvfrom(self.BUFFER)
                data_struct = pickle.loads(rec_data)
@@ -39,40 +39,24 @@ class StreamingServer:
 
                     s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
                
-               if (header == protocol.HEAD_REQUEST and v <= 0): #if user from Flask application is requesting cam frames
-                    v += 1
+               if (header == protocol.HEAD_REQUEST): #if user from Flask application is requesting cam frames
+                    print(f"Handling request from - {addr}")
+                    port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
                     mxid = data["mxid"]
-                    thread = threading.Thread(target=handle_Flask_req, args=[addr, mxid])
+                    address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
+                    thread = threading.Thread(target=handle_Flask_req, args=[address, mxid, self.packet_delay])
                     thread.start()
 
-def handle_Flask_req(addr, mxid):
+def handle_Flask_req(addr, mxid, packet_delay):
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
      buffer_space = s_buffers[mxid]
 
      while not(buffer_space.is_empty()):
           curr_packet = buffer_space.release()
-          sent_data = pickle.dumps(curr_packet)
+          data_struct = {"data": curr_packet}
+          sent_data = pickle.dumps(data_struct)
           sending_socket.sendto(sent_data, addr)
-
-def collect_cam_frame(packet):
-     dec_data = base64.b64decode(packet, ' /')
-     np_data = np.fromstring(dec_data, dtype=np.uint8)
-     frame = cv2.imdecode(np_data, 1)
-     yield(frame)
-     
-     '''
-     #trying this to see if I'm still getting the data
-     if len(buffer) > 0:
-          curr_packet = buffer.pop()
-          mxid = curr_packet["mxid"]
-          frame_data = curr_packet["frame"]
-          dec_data = base64.b64decode(frame_data, ' /')
-          np_data = np.fromstring(dec_data, dtype=np.uint8)
-          frame = cv2.imdecode(np_data, 1)
-          cv2.imshow(mxid, frame)
-          if cv2.waitKey(1) == ord('q'):
-               break
-     '''
+          time.sleep(packet_delay) #add delay, as buffer releases frames too fast. Allows client time to process a packet
 
 def main():
     s = StreamingServer()
