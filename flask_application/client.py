@@ -14,55 +14,41 @@ import cv2  # opencv - display the video stream
 import time
 import numpy as np
 import threading
-import pickle, struct
+import pickle, struct, base64
 
 class Client:
 
     #Constructor: load client configuration from config file
     def __init__(self):
         self.serverName, self.serverPort, self.clientPort = config.config().readClientConfig()
-        self.conn = True
-        self.count = 0
-
-
-    # Build connection to server
-    def connect(self):
-        serverName = self.serverName
-        serverPort = self.serverPort
-        clientSocket = socket(AF_INET, SOCK_STREAM)
-        clientSocket.connect((serverName,serverPort))
-        return clientSocket
+        self.BUFFER = 65536
+    
+    def get_server_addr(self):
+         return (self.serverName, self.serverPort) #(IP, PORT)
     
     def get_camera(self, camera):
-        mySocket=self.connect()
-        mySocket.send(protocol.prepareMsg(protocol.HEAD_REQUEST,camera))
+        #create socket connection. Client will act as server to recieve data
+        server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.BUFFER)
+        server.bind(self.address)
 
-        data = b""
-        payload_size = struct.calcsize("Q")
+        #create package to be sent to streaming server for a specific camera
+        data_struct = {"header": protocol.HEAD_REQUEST, "data":{"mxid": camera}}
+        msg = pickle.dumps(data_struct)
 
+        #send message to streaming server for specific camera
+        sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sending_socket.sendto(msg, self.get_server_addr())
+
+        #start unpacking frames and streaming video
         while True:
-            
-            while len(data) < payload_size:
-                packet = mySocket.recv(4*1024) #4k
-                if not packet: break
-                data += packet
-            packed_msg_size = data[:payload_size]
-            data = data[payload_size:]
-            msg_size = struct.unpack("Q", packed_msg_size)[0]
+            rec_data, addr = server.recvfrom(self.BUFFER)
+            packet = pickle.loads(rec_data)
+            dec_data = base64.b64decode(packet, ' /')
+            np_data = np.fromstring(dec_data, dtype=np.uint8)
+            frame = cv2.imdecode(np_data, 1)
 
-            while len(data) < msg_size:
-                data += mySocket.recv(4*1024) #4k
-            frame_data = data[:msg_size]
-            data = data[msg_size:]
-            frame = pickle.loads(frame_data)
-            ret, new_frame = cv2.imencode('.jpg',frame)
-            final_frame = new_frame.tobytes()
-            yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + final_frame + b'\r\n')
-
-            #send new message saying to continue
-            mySocket.send(protocol.prepareMsg(protocol.HEAD_CONN,''))
+            yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
             if cv2.waitKey(1) == ord('q'):
                     break
-        
-        mySocket.send(protocol.prepareMsg(protocol.HEAD_DISCONNECT,''))

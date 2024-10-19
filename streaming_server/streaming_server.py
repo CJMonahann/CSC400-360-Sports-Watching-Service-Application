@@ -51,14 +51,8 @@ def handle_Flask_req(addr, mxid):
 
      while not(buffer_space.is_empty()):
           curr_packet = buffer_space.release()
-          dec_data = base64.b64decode(curr_packet, ' /')
-          np_data = np.fromstring(dec_data, dtype=np.uint8)
-          frame = cv2.imdecode(np_data, 1)
-          cv2.imshow(mxid, frame)
-          if cv2.waitKey(1) == ord('q'):
-               break
-          #sending_socket.sendto(packet, addr)
-          time.sleep(0.05)
+          sent_data = pickle.dumps(curr_packet)
+          sending_socket.sendto(sent_data, addr)
 
 def collect_cam_frame(packet):
      dec_data = base64.b64decode(packet, ' /')
