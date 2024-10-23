@@ -9,6 +9,8 @@ import cv2  # opencv - display the video stream
 import time
 import client
 import pickle
+import os
+from dotenv import load_dotenv
 
 @app.route('/')
 @app.route('/home')
@@ -23,7 +25,12 @@ def event_page():
 @app.route('/video/CAM-<string:MXID>')
 def video(MXID):
     try:
-        socket = client.Client()
+        load_dotenv('.env')
+        S_IP = os.getenv('STREAM_SERVER_IP')
+        S_Port = int(os.getenv('STREAM_SERVER_PORT'))
+        F_IP = os.getenv('FLASK_IP')
+        F_Port = int(os.getenv('FLASK_PORT'))
+        socket = client.Client(S_IP, S_Port, F_IP, F_Port)
         return Response(socket.get_camera(MXID), mimetype='multipart/x-mixed-replace; boundary=frame')
     except:
         new_url = f'/video/CAM-<string:{MXID}>'

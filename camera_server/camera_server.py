@@ -8,6 +8,8 @@ import imutils
 import base64
 import pickle
 import protocol
+import os
+from dotenv import load_dotenv
 
 class Timer:
     def __init__(self, duration = 30):
@@ -76,10 +78,8 @@ def worker(device_info, stack, devices):
 
 def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        IP = server_IP
-        Port = server_port
-        address = (IP, Port)
-        THRESHOLD = 25.0
+        address = (server_IP, server_port)
+        THRESHOLD = float(os.getenv('MOTION_THRESHOLD'))
 
         #this will be the frame we use for the optical flow - grayscale to detect motion
         gray_frame = q_rgb['cam'].get().getCvFrame()
@@ -88,6 +88,7 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         #we will now detect motion and only send a frame if motion is detected
         x = 0
         while True:
+
             frame = q_rgb['cam'].get().getCvFrame() #collect a frame from feed
             packet = pack_frame(mxid, frame) #this will be the frame we send via UDP
            
@@ -169,8 +170,12 @@ def start_cameras(server_IP, server_port, timer_obj):
             t.join()
         
 def main():
-    t = Timer() #default of 30 seconds for camera record time when no argument is passed
-    start_cameras('192.168.1.132', 1200, t)
+    load_dotenv()
+    IP = os.getenv("SERVER_IP")
+    Port = int(os.getenv("SERVER_PORT"))
+    rec_time = float(os.getenv("REC_TIME"))
+    t = Timer(rec_time) #default of 30 seconds for camera record time when no argument is passed
+    start_cameras(IP, Port, t)
 
 if __name__ == "__main__":
     main()

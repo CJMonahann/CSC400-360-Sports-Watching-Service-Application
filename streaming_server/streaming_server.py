@@ -5,26 +5,33 @@ import time
 import base64
 import pickle
 import threading
-import config
 import protocol
 import Buffer
+import os
+from dotenv import load_dotenv
 
 s_buffers = {}
 
 class StreamingServer:
-     def __init__(self):
-          self.address= ("192.168.1.132", 1200) 
+     def __init__(self, address, port, delay):
+          self.address= (address, port) 
           self.BUFFER = 65536
+          self.delay = delay
+
+     def buffer_size(self):
+          return self.BUFFER
+     
+     def get_delay(self):
+          return self.delay
         
      def start(self):
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-          server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.BUFFER)
+          server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.buffer_size())
           server.bind(self.address)
 
           print("The server is ready to recieve")
-          v = 0
           while True:
-               rec_data, addr = server.recvfrom(self.BUFFER)
+               rec_data, addr = server.recvfrom(self.buffer_size())
                data_struct = pickle.loads(rec_data)
                header = data_struct["header"]
                data = data_struct["data"]
@@ -39,49 +46,31 @@ class StreamingServer:
 
                     s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
                
-               if (header == protocol.HEAD_REQUEST and v <= 0): #if user from Flask application is requesting cam frames
-                    v += 1
+               if (header == protocol.HEAD_REQUEST): #if user from Flask application is requesting cam frames
+                    print(f"Handling request from - {addr}")
+                    port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
                     mxid = data["mxid"]
-                    thread = threading.Thread(target=handle_Flask_req, args=[addr, mxid])
+                    address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
+                    thread = threading.Thread(target=handle_Flask_req, args=[address, mxid, self.get_delay()])
                     thread.start()
 
-def handle_Flask_req(addr, mxid):
+def handle_Flask_req(addr, mxid, packet_delay):
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
      buffer_space = s_buffers[mxid]
 
      while not(buffer_space.is_empty()):
           curr_packet = buffer_space.release()
-          dec_data = base64.b64decode(curr_packet, ' /')
-          np_data = np.fromstring(dec_data, dtype=np.uint8)
-          frame = cv2.imdecode(np_data, 1)
-          cv2.imshow(mxid, frame)
-          if cv2.waitKey(1) == ord('q'):
-               break
-          #sending_socket.sendto(packet, addr)
-          time.sleep(0.05)
-
-def collect_cam_frame(packet):
-     dec_data = base64.b64decode(packet, ' /')
-     np_data = np.fromstring(dec_data, dtype=np.uint8)
-     frame = cv2.imdecode(np_data, 1)
-     yield(frame)
-     
-     '''
-     #trying this to see if I'm still getting the data
-     if len(buffer) > 0:
-          curr_packet = buffer.pop()
-          mxid = curr_packet["mxid"]
-          frame_data = curr_packet["frame"]
-          dec_data = base64.b64decode(frame_data, ' /')
-          np_data = np.fromstring(dec_data, dtype=np.uint8)
-          frame = cv2.imdecode(np_data, 1)
-          cv2.imshow(mxid, frame)
-          if cv2.waitKey(1) == ord('q'):
-               break
-     '''
+          data_struct = {"data": curr_packet}
+          sent_data = pickle.dumps(data_struct)
+          sending_socket.sendto(sent_data, addr)
+          time.sleep(packet_delay) #add delay, as buffer releases frames too fast. Allows client time to process a packet
 
 def main():
-    s = StreamingServer()
+    load_dotenv()
+    IP = os.getenv("SERVER_IP")
+    Port = int(os.getenv("SERVER_PORT"))
+    delay = float(os.getenv("DELAY"))
+    s = StreamingServer(IP, Port, delay)
     s.start()
 
 if __name__ == "__main__":
