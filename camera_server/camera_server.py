@@ -173,7 +173,8 @@ def main():
     load_dotenv()
     IP = os.getenv("SERVER_IP")
     Port = int(os.getenv("SERVER_PORT"))
-    t = Timer() #default of 30 seconds for camera record time when no argument is passed
+    rec_time = float(os.getenv("REC_TIME"))
+    t = Timer(rec_time) #default of 30 seconds for camera record time when no argument is passed
     start_cameras(IP, Port, t)
 
 if __name__ == "__main__":
