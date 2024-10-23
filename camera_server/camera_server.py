@@ -79,7 +79,7 @@ def worker(device_info, stack, devices):
 def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         address = (server_IP, server_port)
-        THRESHOLD = 25.0
+        THRESHOLD = float(os.getenv('MOTION_THRESHOLD'))
 
         #this will be the frame we use for the optical flow - grayscale to detect motion
         gray_frame = q_rgb['cam'].get().getCvFrame()
@@ -88,6 +88,7 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         #we will now detect motion and only send a frame if motion is detected
         x = 0
         while True:
+
             frame = q_rgb['cam'].get().getCvFrame() #collect a frame from feed
             packet = pack_frame(mxid, frame) #this will be the frame we send via UDP
            
@@ -172,7 +173,7 @@ def main():
     load_dotenv()
     IP = os.getenv("SERVER_IP")
     Port = int(os.getenv("SERVER_PORT"))
-    t = Timer(5) #default of 30 seconds for camera record time when no argument is passed
+    t = Timer() #default of 30 seconds for camera record time when no argument is passed
     start_cameras(IP, Port, t)
 
 if __name__ == "__main__":
