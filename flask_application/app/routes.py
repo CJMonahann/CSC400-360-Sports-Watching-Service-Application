@@ -12,6 +12,8 @@ import pickle
 import os
 from dotenv import load_dotenv
 
+#global variables
+
 @app.route('/')
 @app.route('/home')
 @app.route('/HOME')
@@ -69,7 +71,9 @@ def video(MXID):
         F_IP = os.getenv('FLASK_IP')
         F_Port = int(os.getenv('FLASK_PORT'))
         socket = client.Client(S_IP, S_Port, F_IP, F_Port)
+        print(F_Port, type(F_Port))
         return Response(socket.get_camera(MXID), mimetype='multipart/x-mixed-replace; boundary=frame')
+
     except:
         new_url = f'/video/CAM-<string:{MXID}>'
         return redirect(new_url)

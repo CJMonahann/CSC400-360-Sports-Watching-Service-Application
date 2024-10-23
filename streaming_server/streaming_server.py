@@ -11,6 +11,7 @@ import os
 from dotenv import load_dotenv
 
 s_buffers = {}
+s_request = {}
 
 class StreamingServer:
      def __init__(self, address, port, delay):
@@ -28,6 +29,10 @@ class StreamingServer:
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
           server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.buffer_size())
           server.bind(self.address)
+
+          thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay()])
+          thread.start()
+          
 
           print("The server is ready to recieve")
           while True:
@@ -51,8 +56,37 @@ class StreamingServer:
                     port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
                     mxid = data["mxid"]
                     address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
+
+                    if mxid not in s_request:
+                         s_request[mxid] = []
+                    
+                    s_request[mxid].append(address)
+                    print(s_request)
+
+                    '''
                     thread = threading.Thread(target=handle_Flask_req, args=[address, mxid, self.get_delay()])
                     thread.start()
+                    '''
+
+def send_buffer_frames(s_buffers, s_requests, packet_delay):
+     print('Buffer space online')
+     sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+     while True:
+          try:
+               for mxid, buffer in s_buffers.items():
+                    if mxid in s_requests: #if we have a request for a particular camera
+                         curr_packet = buffer.release()
+                         data_struct = {"data": curr_packet}
+                         sent_data = pickle.dumps(data_struct)
+                         req_list = s_requests[mxid] #gather all addresses that requested a frame
+                         for addr in req_list:
+                              sending_socket.sendto(sent_data, addr)
+                         print('frame sent')
+               time.sleep(packet_delay)
+          except:
+               continue
+
 
 def handle_Flask_req(addr, mxid, packet_delay):
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
