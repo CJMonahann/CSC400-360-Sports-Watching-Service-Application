@@ -6,4 +6,4 @@ class PortCounter:
         return self.port
     
     def inc_port(self):
-        self.get_port += 1
+        self.port += 1
