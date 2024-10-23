@@ -8,6 +8,8 @@ import imutils
 import base64
 import pickle
 import protocol
+import os
+from dotenv import load_dotenv
 
 class Timer:
     def __init__(self, duration = 30):
@@ -76,9 +78,7 @@ def worker(device_info, stack, devices):
 
 def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        IP = server_IP
-        Port = server_port
-        address = (IP, Port)
+        address = (server_IP, server_port)
         THRESHOLD = 25.0
 
         #this will be the frame we use for the optical flow - grayscale to detect motion
@@ -169,8 +169,11 @@ def start_cameras(server_IP, server_port, timer_obj):
             t.join()
         
 def main():
+    load_dotenv()
+    IP = os.getenv("SERVER_IP")
+    Port = int(os.getenv("SERVER_PORT"))
     t = Timer() #default of 30 seconds for camera record time when no argument is passed
-    start_cameras('192.168.1.132', 1200, t)
+    start_cameras(IP, Port, t)
 
 if __name__ == "__main__":
     main()

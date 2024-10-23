@@ -5,15 +5,16 @@ import time
 import base64
 import pickle
 import threading
-import config
 import protocol
 import Buffer
+import os
+from dotenv import load_dotenv
 
 s_buffers = {}
 
 class StreamingServer:
-     def __init__(self):
-          self.address= ("192.168.1.132", 1200) 
+     def __init__(self, address, port):
+          self.address= (address, port) 
           self.BUFFER = 65536
         
      def start(self):
@@ -81,7 +82,10 @@ def collect_cam_frame(packet):
      '''
 
 def main():
-    s = StreamingServer()
+    load_dotenv()
+    IP = os.getenv("SERVER_IP")
+    Port = int(os.getenv("SERVER_PORT"))
+    s = StreamingServer(IP, Port)
     s.start()
 
 if __name__ == "__main__":
