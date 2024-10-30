@@ -9,9 +9,11 @@ import protocol
 import Buffer
 import os
 from dotenv import load_dotenv
+from PIL import Image
 
 s_buffers = {}
 s_request = {}
+ERROR_FRAME = ''
 
 class StreamingServer:
      def __init__(self, address, port, delay):
@@ -33,6 +35,8 @@ class StreamingServer:
           thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay()])
           thread.start()
           
+          #create error frame message
+          #ERROR_FRAME = pack_error_frame()
 
           print("The server is ready to recieve")
           while True:
@@ -75,17 +79,27 @@ def send_buffer_frames(s_buffers, s_requests, packet_delay):
      while True:
           try:
                for mxid, buffer in s_buffers.items():
-                    if mxid in s_requests: #if we have a request for a particular camera
+                    if not(buffer.is_empty()):
                          curr_packet = buffer.release()
-                         data_struct = {"data": curr_packet}
-                         sent_data = pickle.dumps(data_struct)
-                         req_list = s_requests[mxid] #gather all addresses that requested a frame
-                         for addr in req_list:
-                              sending_socket.sendto(sent_data, addr)
-                         print('frame sent')
+
+                         if mxid in s_requests: #if we have a request for a particular camera
+                              #curr_packet = buffer.release()
+                              data_struct = {"data": curr_packet}
+                              sent_data = pickle.dumps(data_struct)
+                              req_list = s_requests[mxid] #gather all addresses that requested a frame
+                              for addr in req_list:
+                                   sending_socket.sendto(sent_data, addr)
+                              print('frame sent')
                time.sleep(packet_delay)
           except:
                continue
+
+def pack_error_frame():
+     image = cv2.imread(r'streaming_server\images\Camera_Error_Display.JPG')
+     res_frame = imutils.resize(image, width=400)
+     _, new_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+     byte_packet = base64.b64encode(new_frame)
+     return byte_packet
 
 
 def handle_Flask_req(addr, mxid, packet_delay):
