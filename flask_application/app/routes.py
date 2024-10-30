@@ -15,6 +15,18 @@ import PortCounter
 
 #global variables
 port_obj = PortCounter.PortCounter(int(os.getenv('FLASK_PORT')))
+img_path = os.path.join(app.root_path, 'static', 'images', 'server_messages', 'Camera_Error_Display.JPG')
+ERROR_IMG = {"IMG": b''}
+
+#create instance of the error image in memory to be displayed to users when a camera isn't available
+#this can be referenced by various users in real time
+if os.path.exists(img_path): #if the path is correct, create the image, and store in the dictionary
+    with open(img_path, 'rb') as image:
+        image_data = image.read()
+    ERROR_IMG['IMG'] = image_data
+else:
+    print("ERROR Image path not found")
+    
 
 @app.route('/')
 @app.route('/home')
@@ -73,12 +85,6 @@ def video(MXID):
     F_IP = os.getenv('FLASK_IP')
     F_Port = port_obj.get_port() #always assign new internal-port number to a new client
     port_obj.inc_port() #increment port object's port number so that no two internal-ports are the same
-    socket = client.Client(S_IP, S_Port, F_IP, F_Port)
+    socket = client.Client(S_IP, S_Port, F_IP, F_Port, ERROR_IMG)
     print(F_Port, type(F_Port))
     return Response(socket.get_camera(MXID), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-'''
-    except:
-        new_url = f'/video/CAM-<string:{MXID}>'
-        return redirect(new_url)
-'''

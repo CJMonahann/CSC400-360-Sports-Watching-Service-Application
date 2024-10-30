@@ -13,7 +13,6 @@ from PIL import Image
 
 s_buffers = {}
 s_request = {}
-ERROR_FRAME = ''
 
 class StreamingServer:
      def __init__(self, address, port, delay):
@@ -26,6 +25,10 @@ class StreamingServer:
      
      def get_delay(self):
           return self.delay
+     
+     def create_cam_buffer(self, s_buffers, mxid):
+           if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
+                s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
         
      def start(self):
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -48,10 +51,8 @@ class StreamingServer:
                if (header == protocol.HEAD_CS): #collects camera frames from camera server
                     mxid = data["mxid"]
 
-
-                    if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
-                         s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
-                         print(s_buffers.keys())
+                    #one way in which buffer space can be created for camera information 
+                    self.create_cam_buffer(s_buffers, mxid)
 
                     s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
                
@@ -61,16 +62,15 @@ class StreamingServer:
                     mxid = data["mxid"]
                     address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
 
+                    #create buffer space for camera if not already had
+                    self.create_cam_buffer(s_buffers, mxid)
+
+                    #create request reqistry for a user trying to access a camera
                     if mxid not in s_request:
                          s_request[mxid] = []
                     
                     s_request[mxid].append(address)
-                    print(s_request)
 
-                    '''
-                    thread = threading.Thread(target=handle_Flask_req, args=[address, mxid, self.get_delay()])
-                    thread.start()
-                    '''
 
 def send_buffer_frames(s_buffers, s_requests, packet_delay):
      print('Buffer space online')
@@ -79,39 +79,17 @@ def send_buffer_frames(s_buffers, s_requests, packet_delay):
      while True:
           try:
                for mxid, buffer in s_buffers.items():
-                    if not(buffer.is_empty()):
                          curr_packet = buffer.release()
 
                          if mxid in s_requests: #if we have a request for a particular camera
-                              #curr_packet = buffer.release()
                               data_struct = {"data": curr_packet}
                               sent_data = pickle.dumps(data_struct)
                               req_list = s_requests[mxid] #gather all addresses that requested a frame
                               for addr in req_list:
                                    sending_socket.sendto(sent_data, addr)
-                              print('frame sent')
                time.sleep(packet_delay)
           except:
                continue
-
-def pack_error_frame():
-     image = cv2.imread(r'streaming_server\images\Camera_Error_Display.JPG')
-     res_frame = imutils.resize(image, width=400)
-     _, new_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-     byte_packet = base64.b64encode(new_frame)
-     return byte_packet
-
-
-def handle_Flask_req(addr, mxid, packet_delay):
-     sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-     buffer_space = s_buffers[mxid]
-
-     while not(buffer_space.is_empty()):
-          curr_packet = buffer_space.release()
-          data_struct = {"data": curr_packet}
-          sent_data = pickle.dumps(data_struct)
-          sending_socket.sendto(sent_data, addr)
-          time.sleep(packet_delay) #add delay, as buffer releases frames too fast. Allows client time to process a packet
 
 def main():
     load_dotenv()
