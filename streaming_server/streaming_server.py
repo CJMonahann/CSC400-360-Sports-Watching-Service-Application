@@ -15,35 +15,46 @@ s_buffers = {}
 s_request = {}
 
 class StreamingServer:
-     def __init__(self, address, port, delay):
-          self.address= (address, port) 
-          self.BUFFER = 65536
-          self.delay = delay
+     def __init__(self, address, port, delay, max):
+          self.__address= (address, port) 
+          self.__BUFFER = 65536
+          self.__delay = delay
+          self.__max = max
 
-     def buffer_size(self):
-          return self.BUFFER
+     def get_address(self):
+          return self.__address
+
+     def receive_size(self):
+          return self.__BUFFER
      
      def get_delay(self):
-          return self.delay
+          return self.__delay
      
      def create_cam_buffer(self, s_buffers, mxid):
            if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
                 s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
-        
+
+     def max_buffer_size(self):
+          return self.__max
+     
      def start(self):
+          #define constants
+          RECV_SIZE = self.receive_size()
+
+          #configure and start streaming server
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-          server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.buffer_size())
-          server.bind(self.address)
+          server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RECV_SIZE)
+          server.bind(self.get_address())
 
           thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay()])
           thread.start()
-          
-          #create error frame message
-          #ERROR_FRAME = pack_error_frame()
+
+          monitor_thread = threading.Thread(target=monitor_buffers, args=[s_buffers, self.max_buffer_size()])
+          monitor_thread.start()
 
           print("The server is ready to recieve")
           while True:
-               rec_data, addr = server.recvfrom(self.buffer_size())
+               rec_data, addr = server.recvfrom(RECV_SIZE)
                data_struct = pickle.loads(rec_data)
                header = data_struct["header"]
                data = data_struct["data"]
@@ -71,7 +82,6 @@ class StreamingServer:
                     
                     s_request[mxid].append(address)
 
-
 def send_buffer_frames(s_buffers, s_requests, packet_delay):
      print('Buffer space online')
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -91,12 +101,24 @@ def send_buffer_frames(s_buffers, s_requests, packet_delay):
           except:
                continue
 
+def monitor_buffers(s_buffers, max_size):
+     print('monitoring buffers')
+
+     while True:
+          try:
+               for mxid, buffer in s_buffers.items():
+                    if buffer.len() >= max_size: #if a buffer has reached the max length we have defined
+                         buffer.reset() #clear the current buffer to make space in memory
+          except:
+               continue
+
 def main():
     load_dotenv()
     IP = os.getenv("SERVER_IP")
     Port = int(os.getenv("SERVER_PORT"))
     delay = float(os.getenv("DELAY"))
-    s = StreamingServer(IP, Port, delay)
+    buffer_size = int(os.getenv("BUFFER_SIZE"))
+    s = StreamingServer(IP, Port, delay, buffer_size)
     s.start()
 
 if __name__ == "__main__":
