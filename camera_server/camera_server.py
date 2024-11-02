@@ -132,7 +132,7 @@ def pack_frame(event_id, mxid, num_frame, frame):
                    {
                    "event_id": event_id,
                    "mxid":mxid,
-                   "num_frame": num_frame, 
+                   "num_frame": str(num_frame), 
                    "frame":byte_packet
                    }
                    }
