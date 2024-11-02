@@ -13,6 +13,7 @@ from PIL import Image
 
 s_buffers = {}
 s_request = {}
+PATH = os.getcwd() + "\streaming_server" + "\\" + "recordings" + "\\"
 
 class StreamingServer:
      def __init__(self, address, port, delay, max):
@@ -38,6 +39,7 @@ class StreamingServer:
           return self.__max
      
      def start(self):
+          rec_event("", "", "", "")
           #define constants
           RECV_SIZE = self.receive_size()
 
@@ -60,12 +62,16 @@ class StreamingServer:
                data = data_struct["data"]
                
                if (header == protocol.HEAD_CS): #collects camera frames from camera server
+
                     mxid = data["mxid"]
 
                     #one way in which buffer space can be created for camera information 
                     self.create_cam_buffer(s_buffers, mxid)
-
                     s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
+
+                    #record frame
+                    rec_event(PATH, data["event_id"], data["mxid"], data["num_frame"], data["frame"])
+               
                
                if (header == protocol.HEAD_REQUEST): #if user from Flask application is requesting cam frames
                     print(f"Handling request from - {addr}")
@@ -111,6 +117,32 @@ def monitor_buffers(s_buffers, max_size):
                          buffer.reset() #clear the current buffer to make space in memory
           except:
                continue
+
+def rec_event(path, event_id, mxid, num_frame, data):
+     #define various paths
+     event_dir = path + f"\{event_id}"
+     cam_dir = event_dir + f"\{mxid}"
+     FRAME = "Frame-"
+
+     #check to see if event directory has been created
+     if not(os.path.exists(event_dir)) and os.path.isdir(event_dir): #if the event dir doesnt exist, create it
+          os.makedirs(event_dir, exist_ok= True)
+     
+     #check to see if a camera sub-directory within an event exist
+     if not(os.path.exists(cam_dir)) and os.path.isdir(cam_dir): #if the event dir doesnt exist, create it
+          os.makedirs(cam_dir, exist_ok= True)
+
+     #add the frame to the appropreate cam sub-directory using the name convention
+     curr_frame = FRAME + num_frame
+     curr_path = cam_dir + f"\{curr_frame}"
+     with open(curr_path, "w") as file:
+          file.write("some text!")
+     #store_rec(curr_frame, data)
+
+def store_rec(frame_name, data):
+     pass
+
+
 
 def main():
     load_dotenv()
