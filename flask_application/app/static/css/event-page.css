@@ -1,0 +1,30 @@
+.main-content-container {
+    height: 765px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.main-content-container .camera-info-containter {
+    flex-grow: 2;
+}
+
+.camera-info-containter,
+.event-info-container {
+    padding: 20px;
+}
+
+.camera-info-containter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.camera-info-containter svg,
+button {
+    margin-top: 30px;
+}
+
+.event-info-container {
+    text-align: center;
+}
