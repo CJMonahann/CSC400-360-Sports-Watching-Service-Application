@@ -13,34 +13,34 @@ from PIL import Image
 
 s_buffers = {}
 s_request = {}
-PATH = os.getcwd() + "\streaming_server" + "\\" + "recordings" + "\\"
 
 class StreamingServer:
-     def __init__(self, address, port, delay, max):
+     def __init__(self, address, port, delay, max, path):
           self.__address= (address, port) 
           self.__BUFFER = 65536
           self.__delay = delay
           self.__max = max
+          self.__rec_path = path
 
      def get_address(self):
           return self.__address
-
-     def receive_size(self):
-          return self.__BUFFER
      
      def get_delay(self):
           return self.__delay
      
-     def create_cam_buffer(self, s_buffers, mxid):
-           if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
-                s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
+     def get_path(self):
+          return self.__rec_path
+
+     def receive_size(self):
+          return self.__BUFFER
 
      def max_buffer_size(self):
           return self.__max
      
      def start(self):
           #define constants
-          RECV_SIZE = self.receive_size()
+          RECV_SIZE = self.receive_size() #defines buffer size from which the server can recieve data
+          PATH = self.get_path() #defines the path to the recordings server where event footage is stored
 
           #configure and start streaming server
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -59,33 +59,42 @@ class StreamingServer:
                data_struct = pickle.loads(rec_data)
                header = data_struct["header"]
                data = data_struct["data"]
-               
-               if (header == protocol.HEAD_CS): #collects camera frames from camera server
 
-                    mxid = data["mxid"]
+               #start thread to handle recieved data
+               h_thread = threading.Thread(target=handle_thread, args=[header, addr, data, PATH])
+               h_thread.start()
 
-                    #one way in which buffer space can be created for camera information 
-                    self.create_cam_buffer(s_buffers, mxid)
-                    s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
+def handle_thread(header, addr, data, PATH):
+     if (header == protocol.HEAD_CS): #collects camera frames from camera server
 
-                    #record frame
-                    rec_event(PATH, data["event_id"], data["mxid"], data["num_frame"], data["frame"])
-               
-               
-               if (header == protocol.HEAD_REQUEST): #if user from Flask application is requesting cam frames
-                    print(f"Handling request from - {addr}")
-                    port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
-                    mxid = data["mxid"]
-                    address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
+          #Starts the process of recording frame data. 
+          #This thread ends after the frame has been recorded
+          rec_thread = threading.Thread(target=rec_event, args=[PATH, data["event_id"], data["mxid"], data["num_frame"], data["frame"]])
+          rec_thread.start()
+          
+          mxid = data["mxid"]
 
-                    #create buffer space for camera if not already had
-                    self.create_cam_buffer(s_buffers, mxid)
+          #one way in which buffer space can be created for camera information 
+          create_cam_buffer(s_buffers, mxid)
+          s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
+     
+     if (header == protocol.HEAD_REQUEST): #if user from Flask application is requesting cam frames
+          port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
+          mxid = data["mxid"]
+          address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
 
-                    #create request reqistry for a user trying to access a camera
-                    if mxid not in s_request:
-                         s_request[mxid] = []
-                    
-                    s_request[mxid].append(address)
+          #create buffer space for camera if not already had
+          create_cam_buffer(s_buffers, mxid)
+
+          #create request reqistry for a user trying to access a camera
+          if mxid not in s_request:
+               s_request[mxid] = []
+          
+          s_request[mxid].append(address)
+
+def create_cam_buffer(s_buffers, mxid):
+           if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
+                s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
 
 def send_buffer_frames(s_buffers, s_requests, packet_delay):
      print('Buffer space online')
@@ -134,18 +143,14 @@ def rec_event(path, event_id, mxid, num_frame, data):
      #add the frame to the appropreate cam sub-directory using the name convention
      curr_frame = FRAME + num_frame
      curr_path = os.path.join(cam_dir, curr_frame)
-     print(curr_path)
 
-     '''
+     
      with open(curr_path, "w") as file:
-          file.write("some text!")
+          file.write(f"some text! Represents Frame - {num_frame}" )
      #store_rec(curr_frame, data)
-     '''
-
+     
 def store_rec(frame_name, data):
      pass
-
-
 
 def main():
     load_dotenv()
@@ -153,7 +158,8 @@ def main():
     Port = int(os.getenv("SERVER_PORT"))
     delay = float(os.getenv("DELAY"))
     buffer_size = int(os.getenv("BUFFER_SIZE"))
-    s = StreamingServer(IP, Port, delay, buffer_size)
+    rec_path = str(os.getenv("REC_PATH"))
+    s = StreamingServer(IP, Port, delay, buffer_size, rec_path)
     s.start()
 
 if __name__ == "__main__":
