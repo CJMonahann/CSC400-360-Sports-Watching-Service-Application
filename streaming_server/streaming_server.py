@@ -54,7 +54,6 @@ class StreamingServer:
           monitor_thread.start()
 
           print("The server is ready to recieve")
-          send_rec(PATH, "S1E1", "1944301071EC6E1300", "", "")
           while True:
                rec_data, addr = server.recvfrom(RECV_SIZE)
                data_struct = pickle.loads(rec_data)
