@@ -54,6 +54,7 @@ class StreamingServer:
           monitor_thread.start()
 
           print("The server is ready to recieve")
+          send_rec(PATH, "S1E1", "1944301071EC6E1300", "", "")
           while True:
                rec_data, addr = server.recvfrom(RECV_SIZE)
                data_struct = pickle.loads(rec_data)
@@ -62,7 +63,7 @@ class StreamingServer:
 
                #start thread to handle recieved data
                h_thread = threading.Thread(target=handle_thread, args=[header, addr, data, PATH])
-               h_thread.start()
+               h_thread.start()  
 
 def handle_thread(header, addr, data, PATH):
      if (header == protocol.HEAD_CS): #collects camera frames from camera server
@@ -126,9 +127,9 @@ def monitor_buffers(s_buffers, max_size):
           except:
                continue
 
-def rec_event(path, event_id, mxid, num_frame, data):
+def rec_event(PATH, event_id, mxid, num_frame, data):
      #define various paths
-     event_dir = os.path.join(path, event_id)
+     event_dir = os.path.join(PATH, event_id)
      cam_dir = os.path.join(event_dir, mxid)
      FRAME = "Frame-"
 
@@ -141,16 +142,46 @@ def rec_event(path, event_id, mxid, num_frame, data):
           os.makedirs(cam_dir, exist_ok= True)
 
      #add the frame to the appropreate cam sub-directory using the name convention
-     curr_frame = FRAME + num_frame
+     curr_frame = FRAME + num_frame + ".jpg"
      curr_path = os.path.join(cam_dir, curr_frame)
 
+     dec_data = base64.b64decode(data, ' /') #this is the frame data
+
+     with open(curr_path, "wb") as frame:
+          frame.write(dec_data)
      
-     with open(curr_path, "w") as file:
-          file.write(f"some text! Represents Frame - {num_frame}" )
-     #store_rec(curr_frame, data)
-     
-def store_rec(frame_name, data):
-     pass
+def send_rec(PATH, event_id, mxid, addr):
+     sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+     #check to see if the event directory, and needed camera sub-directory exist
+     event_dir = os.path.join(PATH, event_id)
+     cam_dir = os.path.join(event_dir, mxid)
+
+     if (os.path.exists(event_dir) and os.path.isdir(event_dir)) and \
+     (os.path.exists(cam_dir) and os.path.isdir(cam_dir)): #if the recording is had on the server
+          
+          frames = return_frames(cam_dir) #a list of all frame names had in the directory
+          for img in frames:
+               img_path = os.path.join(cam_dir, img)
+               with open(img_path, "rb") as data: #convery byte data into np array, encode, and send
+                    frame = data.read()
+                    np_arr = np.frombuffer(frame, np.uint8) #converts bytes to a NumPy array
+                    new_frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR) #the np array
+                    byte_packet = base64.b64encode(new_frame) #encode so that it fits in UDP buffer space
+                    data_struct = {"data": byte_packet}
+                    sent_data = pickle.dumps(data_struct)
+                    sending_socket.sendto(sent_data, addr)
+                    
+     else:
+          #send an empty byte package to denote that the directory/reocrdings isn't/arent had
+          data_struct = {"data": b""} #triggers event on web server to tell user no frames are had
+          sent_data = pickle.dumps(data_struct)
+          sending_socket.sendto(sent_data, addr)          
+
+
+def return_frames(directory):
+     with os.scandir(directory) as frames:
+          return [img.name for img in frames if img.is_file()]
 
 def main():
     load_dotenv()
