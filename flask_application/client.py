@@ -18,10 +18,11 @@ import pickle, struct, base64
 class Client:
 
     #Constructor: load client configuration from config file
-    def __init__(self, server_IP, server_port, flask_IP, flask_port):
+    def __init__(self, server_IP, server_port, flask_IP, flask_port, ERROR_IMG):
         self.server_addr = (server_IP, server_port)
         self.flask_addr = (flask_IP, flask_port)
         self.BUFFER = 65536
+        self.ERROR_IMG = ERROR_IMG["IMG"] #points to location of the image data created in memory
     
     def get_server_addr(self):
          return self.server_addr
@@ -34,6 +35,9 @@ class Client:
     
     def buffer_size(self):
          return self.BUFFER
+    
+    def get_error_img(self):
+         return self.ERROR_IMG
     
     def get_camera(self, camera):
         server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -52,7 +56,13 @@ class Client:
         while True:
             rec_data, addr = server.recvfrom(self.buffer_size())
             packet = pickle.loads(rec_data)
-            dec_data = base64.b64decode(packet["data"], ' /') #this is the frame data
+            data = packet["data"]
+
+            if data:
+                 dec_data = base64.b64decode(packet["data"], ' /') #this is the frame data
+            else:
+                 dec_data = self.get_error_img()
+
             yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
 
             if cv2.waitKey(1) == ord('q'):

@@ -21,7 +21,10 @@ class Buffer:
 
     #allows the latest image frame to be released from the Buffer
     def release(self):
-        return self.buffer.pop()
+        if not(self.is_empty()):
+            return self.buffer.pop()
+        else:
+            return b''
     
     #collects len of buffer - how many data frames as stored
     def len(self):
