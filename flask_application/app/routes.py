@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
 from app.models import User, Event #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm #makes forms functional in routes
+from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -158,11 +158,24 @@ def events_eo():
 
     return render_template('events_eo.html', events=events)  # Pass events to the template
 
-@app.route('/events_sm')
+@app.route('/events_sm', methods=['GET', 'POST'])
 def events_sm():
     events = Event.query.all()  # Fetch all events
-    return render_template('events_sm.html', events=events)
+    if request.method == 'POST':
+        action = request.form.get('action')  # Get the action 
+        event_id = request.form.get('id')  # Get the event ID from the form
 
-@app.route('/site_manager')
+        if action == 'update_event':
+                event = Event.query.get(event_id) 
+                return redirect(url_for('site_manager', event_id=event_id))
+
+    # For GET requests, render the events page with the list of events
+    return render_template('events.html', events=events)
+
+@app.route('/site_manager', methods=['GET', 'POST'])
 def site_manager():
-    return render_template('site_manager.html')
+    form = SiteManagerSettingsForm()
+    if form.validate_on_submit():
+         # logic to update site info
+        return redirect(url_for('events_sm'))
+    return render_template('site_manager.html', form = form)

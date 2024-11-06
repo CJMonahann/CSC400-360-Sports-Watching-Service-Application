@@ -71,3 +71,7 @@ class Event(db.Model):
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
     notes = db.Column(db.Text)
+    port = db.Column(db.Integer)
+    ip = db.Column(db.String(50))
+    site = db.Column(db.String(50))
+    

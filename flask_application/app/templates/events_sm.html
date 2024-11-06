@@ -41,8 +41,13 @@
                         <p class="card-text"><strong>Time:</strong> {{ event.time.strftime('%H:%M') }}</p>
                         <p class="card-text">{{ event.notes }}</p>
                         <center>
-                            <a href="{{ url_for('site_manager') }}" class="btn btn-success">Site Information</a>
-                            <a href="#" class="btn btn-primary">Stream</a>
+                            <div class="text-center">
+                                <a href="#" class="btn btn-primary me-2">Stream</a>
+                                <!-- Form for updating the event -->
+                                <form method="POST" action="{{ url_for('site_manager') }}" >
+                                    <input type="hidden" name="id" value="{{ event.id }}"> <!-- Hidden input for event ID -->
+                                    <button type="submit" name="action" value="update_event" class="btn btn-success">Site Information</button>
+                                </form>
                         </center>
                     </div>
                 </div>
