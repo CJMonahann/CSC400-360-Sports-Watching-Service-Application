@@ -34,10 +34,6 @@ else:
 def index():
     return render_template('index.html')
 
-@app.route('/event-page')
-def event_page():
-    return render_template('event-page.html')
-
 @app.route('/sign_up', methods=['GET', 'POST'])
 def sign_up():
     form = signUpForm()
@@ -55,6 +51,14 @@ def sign_up():
 def events():
     events = Event.query.all()  # Fetch all events
     return render_template('events.html', events=events)
+
+@app.route('/event-page-<int:id>')
+def event_page(id):
+    id = int(id)
+    print(id)
+    event_data = Event.query.get(id) #gets the event data needed
+    print(event_data)
+    return render_template('event-page.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
