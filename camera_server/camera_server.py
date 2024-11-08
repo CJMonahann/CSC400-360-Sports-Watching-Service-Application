@@ -80,17 +80,19 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         address = (server_IP, server_port)
         THRESHOLD = float(os.getenv('MOTION_THRESHOLD'))
+        EVENT_ID = str(os.getenv('EVENT_ID'))
+        SEND_DELAY = float(os.getenv('SEND_DELAY'))
 
         #this will be the frame we use for the optical flow - grayscale to detect motion
         gray_frame = q_rgb['cam'].get().getCvFrame()
         gray_frame = cv2.cvtColor(gray_frame, cv2.COLOR_RGB2GRAY)
 
         #we will now detect motion and only send a frame if motion is detected
-        x = 0
+        num_frame = 0
         while True:
 
             frame = q_rgb['cam'].get().getCvFrame() #collect a frame from feed
-            packet = pack_frame(mxid, frame) #this will be the frame we send via UDP
+            packet = pack_frame(EVENT_ID, mxid, num_frame, frame) #this will be the frame we send via UDP
            
             if frame is not None:
                 curr_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY) #current grayscale image for comparison
@@ -112,16 +114,17 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
                     timer_thread.start()
 
                 if timer_obj.has_started() and not(timer_obj.end()):
-                    x += 1
-                    print(f"{mxid} - Frame {x} - Sent")
+                    num_frame += 1
+                    print(f"{mxid} - Frame {num_frame} - Sent")
                     sending_socket.sendto(packet, address)
+                    time.sleep(SEND_DELAY) #create a delay so that streaming server can process data better
                 
                 gray_frame = curr_gray
 
             if cv2.waitKey(1) == ord('q'):
                 break
 
-def pack_frame(mxid,frame):
+def pack_frame(event_id, mxid, num_frame, frame):
     res_frame = imutils.resize(frame, width=400)
     _, new_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
     byte_packet = base64.b64encode(new_frame)
@@ -129,7 +132,9 @@ def pack_frame(mxid,frame):
     data_struct = {"header":header, 
                    "data":
                    {
-                   "mxid":mxid, 
+                   "event_id": event_id,
+                   "mxid":mxid,
+                   "num_frame": str(num_frame), 
                    "frame":byte_packet
                    }
                    }
