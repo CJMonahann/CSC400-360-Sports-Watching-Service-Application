@@ -81,6 +81,7 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         address = (server_IP, server_port)
         THRESHOLD = float(os.getenv('MOTION_THRESHOLD'))
         EVENT_ID = str(os.getenv('EVENT_ID'))
+        SEND_DELAY = float(os.getenv('SEND_DELAY'))
 
         #this will be the frame we use for the optical flow - grayscale to detect motion
         gray_frame = q_rgb['cam'].get().getCvFrame()
@@ -116,6 +117,7 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
                     num_frame += 1
                     print(f"{mxid} - Frame {num_frame} - Sent")
                     sending_socket.sendto(packet, address)
+                    time.sleep(SEND_DELAY) #create a delay so that streaming server can process data better
                 
                 gray_frame = curr_gray
 
