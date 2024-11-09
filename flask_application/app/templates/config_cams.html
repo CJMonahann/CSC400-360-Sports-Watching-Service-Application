@@ -36,10 +36,11 @@
         <div class="card p-4" style="width: 400px;">
             <h2 class="text-center mb-4">Configure A Camera For This Event</h2>
             
-            <form action="{{ url_for('config_cams', id=id) }}" method="POST">
+            <form action="#" method="POST">
                 <div class="mb-3">
-                    {{ form.mxid.label}}
-                    {{ form.mxid}}
+                  {{form.hidden_tag()}}
+                  {{ form.mxid.label(class="form-label") }}
+                  {{ form.mxid(class="form-control", placeholder="Enter The MXID") }}
                 </div>
                 
                 <div>{{form.submit()}}</div>

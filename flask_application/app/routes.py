@@ -9,6 +9,7 @@ import cv2  # opencv - display the video stream
 import time
 import client
 import pickle
+import base64
 import os
 from dotenv import load_dotenv
 import PortCounter
@@ -55,9 +56,10 @@ def events():
 @app.route('/event-page-<int:id>')
 def event_page(id):
     id = int(id)
-    print(id)
     event = Event.query.get(id) #gets the event data needed
-    return render_template('event-page.html', event=event)
+    #get any related cameras via the forein key within the Camera table
+    cameras = Camera.query.filter_by(event_id=id).all()
+    return render_template('event-page.html', event=event, cameras=cameras)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -218,11 +220,10 @@ def config_cams(id):
     id = int(id)
     form = CameraForm()
     if form.validate_on_submit():
-        new_camera = Camera(event_id=id, mxid=form.mxid)
+        new_camera = Camera(event_id=id, mxid=form.mxid.data)
         db.session.add(new_camera)
         db.session.commit()
         print("data was saved!")
         return redirect(url_for('events_sm'))
     
-    print("the form was not submitted")
     return render_template('config_cams.html', form=form, id=id)
