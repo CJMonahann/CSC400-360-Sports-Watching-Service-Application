@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
-from app.models import User, Event #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm #makes forms functional in routes
+from app.models import User, Event, Camera #imports like this will import the databse relations we have made in the 'models.py' page
+from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -9,6 +9,7 @@ import cv2  # opencv - display the video stream
 import time
 import client
 import pickle
+import base64
 import os
 from dotenv import load_dotenv
 import PortCounter
@@ -34,10 +35,6 @@ else:
 def index():
     return render_template('index.html')
 
-@app.route('/event-page')
-def event_page():
-    return render_template('event-page.html')
-
 @app.route('/sign_up', methods=['GET', 'POST'])
 def sign_up():
     form = signUpForm()
@@ -55,6 +52,14 @@ def sign_up():
 def events():
     events = Event.query.all()  # Fetch all events
     return render_template('events.html', events=events)
+
+@app.route('/event-page-<int:id>')
+def event_page(id):
+    id = int(id)
+    event = Event.query.get(id) #gets the event data needed
+    #get any related cameras via the forein key within the Camera table
+    cameras = Camera.query.filter_by(event_id=id).all()
+    return render_template('event-page.html', event=event, cameras=cameras)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -119,6 +124,18 @@ def event_organizer():
         return redirect(url_for('events_eo'))
     return render_template('event_organizer.html', form=form)
 
+'''
+@app.route('/site_manager', methods=['GET', 'POST'])
+def event_organizer():
+    form = eventOrganizerForm()
+    if form.validate_on_submit():
+        new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,time=form.time.data, notes=form.notes.data)
+        db.session.add(new_event)
+        db.session.commit()
+        return redirect(url_for('events_sm'))
+    return render_template('test_site_manager.html', form=form)
+'''
+
 @app.route('/events_eo', methods=['GET', 'POST'])
 def events_eo():
     events = Event.query.all()  # Fetch all events
@@ -158,24 +175,55 @@ def events_eo():
 
     return render_template('events_eo.html', events=events)  # Pass events to the template
 
+
 @app.route('/events_sm', methods=['GET', 'POST'])
 def events_sm():
     events = Event.query.all()  # Fetch all events
+
     if request.method == 'POST':
-        action = request.form.get('action')  # Get the action 
+        action = request.form.get('action')  # Get the action (modify, delete, stream)
         event_id = request.form.get('id')  # Get the event ID from the form
 
-        if action == 'update_event':
-                event = Event.query.get(event_id) 
-                return redirect(url_for('site_manager', event_id=event_id))
+        if action == 'delete_event':
+            # Handle event deletion
+            event = Event.query.get(event_id)  # Use the retrieved event ID
+            if event:
+                db.session.delete(event)
+                db.session.commit()
+                print("Event deleted")
+            else:
+                print("Event not found")  # Optional: handle case where event is not found
+            return redirect(url_for('events_sm'))
+        
+        elif action == 'modify_event':
+            # Handle event modification
+            event = Event.query.get(event_id)  # Get the event by ID
+            if event:
+                # Update the event details
+                event.event_name = request.form.get('event_name')
+                event.sport = request.form.get('sport')
+                event.date = request.form.get('date')
+                event.time = request.form.get('time')
+                event.notes = request.form.get('notes')
+                
+                db.session.commit()  # Save changes to the database
+                print("Event modified")
+            else:
+                print("Event not found")  # Optional: handle case where event is not found
+            
+            return redirect(url_for('events_sm'))
+    
+    return render_template('test_site_manager.html', events=events)  # Pass events to the template
 
-    # For GET requests, render the events page with the list of events
-    return render_template('events.html', events=events)
-
-@app.route('/site_manager', methods=['GET', 'POST'])
-def site_manager():
-    form = SiteManagerSettingsForm()
+@app.route('/config-cams/<int:id>', methods=['GET', 'POST'])
+def config_cams(id):
+    id = int(id)
+    form = CameraForm()
     if form.validate_on_submit():
-         # logic to update site info
+        new_camera = Camera(event_id=id, mxid=form.mxid.data)
+        db.session.add(new_camera)
+        db.session.commit()
+        print("data was saved!")
         return redirect(url_for('events_sm'))
-    return render_template('site_manager.html', form = form)
+    
+    return render_template('config_cams.html', form=form, id=id)

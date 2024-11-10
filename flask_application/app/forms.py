@@ -37,3 +37,7 @@ class SiteManagerSettingsForm(FlaskForm):
     cameras = RadioField('Number of Cameras', choices=[('1', '1 Camera'), ('2', '2 Cameras'), ('3', '3 Cameras')], validators=[DataRequired()])
     notes = TextAreaField('Additional Notes for Event', render_kw={"placeholder": "Enter any additional notes here"})
     submit = SubmitField('Submit')
+
+class CameraForm(FlaskForm):
+    mxid = StringField(validators=[DataRequired()])
+    submit = SubmitField('Submit')

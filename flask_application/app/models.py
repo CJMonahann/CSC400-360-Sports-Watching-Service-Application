@@ -75,3 +75,8 @@ class Event(db.Model):
     ip = db.Column(db.String(50))
     site = db.Column(db.String(50))
     
+class Camera(db.Model):
+    __tablename__ = 'Camera'
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, ForeignKey('Event.id', ondelete='CASCADE'), nullable=False)
+    mxid = db.Column(db.String(50)) #the actual ID inputted by an admin, had by each camera

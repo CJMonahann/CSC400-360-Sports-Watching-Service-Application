@@ -13,17 +13,19 @@
           <img style="height: 50%" class="main-feed cam-container" src="{{url_for('static', filename = 'images/server_messages/Go_Live_Display.JPG')}}" alt = "Camera Feed">
       </div>
       <div class="camera-buttons-container">
-          <button class="btn btn-sm btn-info select-button" data-mxid="1944301071EC6E1300">Cam 1</button>
-          <button class="btn btn-sm btn-light select-button" data-mxid="19443010C1ED201300">Cam 2</button>
-          <button class="btn btn-sm btn-dark select-button" data-mxid="18443010E13D401300">Cam 3</button>
+        {% if cameras %}
+            {% for camera in cameras %}
+                <button class="btn btn-sm btn-info select-button" data-mxid="{{camera.mxid}}"> Cam {{loop.index}}</button>
+            {% endfor %}
+        {% endif %}
       </div>
   </section>
   <section class="event-info-container">
       <p class="h2">
-          Game Event Title
+          {{event.event_name}}
       </p>
       <p>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Autem ipsum perferendis dignissimos itaque quidem est earum optio nihil quaerat voluptas voluptatibus, ad quo quas doloremque assumenda iste adipisci sint corporis.
+          {{event.notes}}
       </p>
   </section>
 </main>
