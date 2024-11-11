@@ -45,9 +45,12 @@
                         <p class="card-text">{{ event.notes }}</p>
                         <center>
                             <div class="text-center">
-                                <a href="{{ url_for('event_organizer', event_id=id) }}" class="btn btn-success">Modify</a>
-                                <a href="event-page-{{event.id}}" class="btn btn-primary me-2">Stream</a>
-                                <a href="config-cams/{{event.id}}" class="btn btn-success">Config Cams</a>
+                              <div style="display: flex; align-items: center; align-content: space-between; margin-bottom: 5px;">
+                                <a href="{{ url_for('event_organizer', event_id=id) }}" class="btn btn-success btn-sm">Modify</a>
+                                <a href="event-page-{{event.id}}" class="btn btn-primary btn-sm">Stream</a>
+                                <a href="config-cams/{{event.id}}" class="btn btn-success btn-sm">Configure Cams</a>
+                                <a href="config-site-ID/{{event.id}}" class="btn btn-primary btn-sm">Site ID</a>
+                              </div>
                                 <!-- Form for deleting the event -->
                                 <form method="POST" action="{{ url_for('events_eo') }}" >
                                     <input type="hidden" name="id" value="{{ event.id }}"> <!-- Hidden input for event ID -->

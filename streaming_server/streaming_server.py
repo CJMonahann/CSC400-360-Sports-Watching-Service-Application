@@ -17,7 +17,7 @@ s_request = {}
 class StreamingServer:
      def __init__(self, address, port, delay, max, path):
           self.__address= (address, port) 
-          self.__BUFFER = 65536
+          self.__BUFFER = 68536
           self.__delay = delay
           self.__max = max
           self.__rec_path = path
@@ -91,6 +91,16 @@ def handle_thread(header, addr, data, PATH):
                s_request[mxid] = []
           
           s_request[mxid].append(address)
+
+     if (header == protocol.HEAD_REC):
+          print("starting sendback")
+          port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
+          mxid = data["mxid"]
+          event_id = data["id"]
+          address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
+          rec_req = threading.Thread(target=send_rec, args=[PATH, event_id, mxid, address])
+          rec_req.start()
+
 
 def create_cam_buffer(s_buffers, mxid):
            if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
@@ -166,7 +176,9 @@ def send_rec(PATH, event_id, mxid, addr):
                     frame = data.read()
                     np_arr = np.frombuffer(frame, np.uint8) #converts bytes to a NumPy array
                     new_frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR) #the np array
-                    byte_packet = base64.b64encode(new_frame) #encode so that it fits in UDP buffer space
+                    res_frame = imutils.resize(new_frame, width=400)
+                    _, final_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    byte_packet = base64.b64encode(final_frame) #encode so that it fits in UDP buffer space
                     data_struct = {"data": byte_packet}
                     sent_data = pickle.dumps(data_struct)
                     sending_socket.sendto(sent_data, addr)

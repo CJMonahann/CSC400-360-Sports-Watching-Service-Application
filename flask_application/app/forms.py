@@ -41,3 +41,7 @@ class SiteManagerSettingsForm(FlaskForm):
 class CameraForm(FlaskForm):
     mxid = StringField(validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+class SiteForm(FlaskForm):
+    site = StringField(validators=[DataRequired()])
+    submit = SubmitField('Submit')

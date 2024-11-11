@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
 from app.models import User, Event, Camera #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm #makes forms functional in routes
+from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -59,7 +59,7 @@ def event_page(id):
     event = Event.query.get(id) #gets the event data needed
     #get any related cameras via the forein key within the Camera table
     cameras = Camera.query.filter_by(event_id=id).all()
-    return render_template('event-page.html', event=event, cameras=cameras)
+    return render_template('event-page.html', event=event, cameras=cameras, id=id)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -79,6 +79,8 @@ def login():
         else:
             print("You have been logged in.")  # Debug statement
             session['username'] = input_username
+            session['is_eo'] = new_user.is_eo
+            session['is_sm'] = new_user.is_sm
             print("Session username set to:", input_username)  # Debug statement
 
             # Redirect based on user role
@@ -113,6 +115,34 @@ def video(MXID):
         new_url = f'/video/CAM-<string:{MXID}>'
         return redirect(new_url)
     
+@app.route('/recording/CAM-<string:MXID>')
+def recording(MXID):
+    str = MXID.split('&')
+    MXID = str[0]
+    event_id = int(str[1])
+    event = Event.query.get(event_id) #gets the event data needed
+    site_id = event.site
+    try:
+        load_dotenv('.env')
+        S_IP = os.getenv('STREAM_SERVER_IP')
+        S_Port = int(os.getenv('STREAM_SERVER_PORT'))
+        F_IP = os.getenv('FLASK_IP')
+        F_Port = port_obj.get_port()  # Dynamically assign new internal-port number
+        port_obj.inc_port()  # Increment to avoid duplicate ports
+        socket = client.Client(S_IP, S_Port, F_IP, F_Port, ERROR_IMG)
+        return Response(socket.get_recording(MXID, site_id), mimetype='multipart/x-mixed-replace; boundary=frame')
+    except:
+        new_url = f'/video/CAM-<string:{MXID}>'
+        return redirect(new_url)
+
+@app.route('/past/games/<int:id>')
+def past_game_page(id):
+    id = int(id)
+    event = Event.query.get(id) #gets the event data needed
+    #get any related cameras via the forein key within the Camera table
+    cameras = Camera.query.filter_by(event_id=id).all()
+    return render_template('past_game_page.html', event=event, cameras=cameras)
+    
 
 @app.route('/event_organizer', methods=['GET', 'POST'])
 def event_organizer():
@@ -124,17 +154,6 @@ def event_organizer():
         return redirect(url_for('events_eo'))
     return render_template('event_organizer.html', form=form)
 
-'''
-@app.route('/site_manager', methods=['GET', 'POST'])
-def event_organizer():
-    form = eventOrganizerForm()
-    if form.validate_on_submit():
-        new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,time=form.time.data, notes=form.notes.data)
-        db.session.add(new_event)
-        db.session.commit()
-        return redirect(url_for('events_sm'))
-    return render_template('test_site_manager.html', form=form)
-'''
 
 @app.route('/events_eo', methods=['GET', 'POST'])
 def events_eo():
@@ -227,3 +246,25 @@ def config_cams(id):
         return redirect(url_for('events_sm'))
     
     return render_template('config_cams.html', form=form, id=id)
+
+@app.route('/config-site-ID/<int:id>', methods=['GET', 'POST'])
+def config_site_ID(id):
+    id = int(id)
+    form = SiteForm()
+    if form.validate_on_submit():
+        site_ID = form.site.data
+        Event.query.filter_by(id=id).update({"site": site_ID})
+        db.session.commit()
+        print("Site ID was updated!", site_ID)
+        return redirect(url_for('events_sm'))
+    
+    return render_template('config_site_ID.html', form=form, id=id)
+
+@app.route('/return/home')
+def return_home():
+    if session['is_eo']:
+        return redirect(url_for('events_eo'))
+    elif session['is_sm']:
+        return redirect(url_for('events_sm'))
+    else:
+        return redirect(url_for('events'))
