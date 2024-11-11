@@ -7,6 +7,7 @@ HEAD_REQUEST='REQ'
 HEAD_DISCONNECT = 'DIS'
 HEAD_CONN = 'CON'
 HEAD_ERROR='ERR'
+HEAD_REC = 'REC'
 HEAD_CS = 'FCS' #stands for 'From Camera Server'
 
 # we prepare the message that are sent between server and client as the header + content

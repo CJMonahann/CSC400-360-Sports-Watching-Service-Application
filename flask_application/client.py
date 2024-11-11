@@ -21,7 +21,7 @@ class Client:
     def __init__(self, server_IP, server_port, flask_IP, flask_port, ERROR_IMG):
         self.server_addr = (server_IP, server_port)
         self.flask_addr = (flask_IP, flask_port)
-        self.BUFFER = 65536
+        self.BUFFER = 85536
         self.ERROR_IMG = ERROR_IMG["IMG"] #points to location of the image data created in memory
     
     def get_server_addr(self):
@@ -38,6 +38,37 @@ class Client:
     
     def get_error_img(self):
          return self.ERROR_IMG
+    
+    def get_recording(self, camera, site_id):
+          server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+          server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.buffer_size())
+          server.bind(self.get_flask_addr())
+
+          #create package to be sent to streaming server for a specific camera
+          data_struct = {"header": protocol.HEAD_REC, "data":{"port": self.flask_port(), 
+                                                                  "mxid": camera,
+                                                                  "id": site_id}}
+          msg = pickle.dumps(data_struct)
+
+          #send message to streaming server for specific camera
+          sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+          sending_socket.sendto(msg, self.get_server_addr())
+
+          #start unpacking frames and streaming video
+          while True:
+               rec_data, addr = server.recvfrom(self.buffer_size())
+               packet = pickle.loads(rec_data)
+               data = packet["data"]
+
+               if data:
+                    dec_data = base64.b64decode(packet["data"], ' /') #this is the frame data
+               else:
+                    dec_data = self.get_error_img()
+
+               yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
+
+               if cv2.waitKey(1) == ord('q'):
+                         break
     
     def get_camera(self, camera):
         server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
