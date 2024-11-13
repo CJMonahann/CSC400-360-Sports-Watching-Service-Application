@@ -88,13 +88,14 @@ class Client:
             rec_data, addr = server.recvfrom(self.buffer_size())
             packet = pickle.loads(rec_data)
             data = packet["data"]
+            Flag = packet["flag"]
 
             if data:
                  dec_data = base64.b64decode(packet["data"], ' /') #this is the frame data
-            else:
+                 yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
+            elif Flag:
                  dec_data = self.get_error_img()
-
-            yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
+                 yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
 
             if cv2.waitKey(1) == ord('q'):
                     break

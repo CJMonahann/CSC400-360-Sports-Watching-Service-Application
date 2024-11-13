@@ -113,10 +113,12 @@ def send_buffer_frames(s_buffers, s_requests, packet_delay):
      while True:
           try:
                for mxid, buffer in s_buffers.items():
+                         buffer.eval_idle(30)
                          curr_packet = buffer.release()
+                         Flag = buffer.get_idle()
 
                          if mxid in s_requests: #if we have a request for a particular camera
-                              data_struct = {"data": curr_packet}
+                              data_struct = {"data": curr_packet, "flag": Flag}
                               sent_data = pickle.dumps(data_struct)
                               req_list = s_requests[mxid] #gather all addresses that requested a frame
                               for addr in req_list:
