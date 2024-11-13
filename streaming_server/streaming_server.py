@@ -200,7 +200,20 @@ def return_frames(directory):
      with os.scandir(directory) as frames:
           return [img.name for img in frames if img.is_file()]
 
+def camera_server():
+    load_dotenv()
+    IP = os.getenv("SERVER_IP")
+    Port = int(os.getenv("SERVER_PORT"))
+    delay = float(os.getenv("DELAY"))
+    buffer_size = int(os.getenv("BUFFER_SIZE"))
+    rec_path = str(os.getenv("REC_PATH"))
+    buffer_idle = float(os.getenv("IDLE"))
+    s = StreamingServer(IP, 12008, delay, buffer_size, rec_path, buffer_idle)
+    s.start()
+
 def main():
+    cs = threading.Thread(target=camera_server)
+    cs.start()
     load_dotenv()
     IP = os.getenv("SERVER_IP")
     Port = int(os.getenv("SERVER_PORT"))
