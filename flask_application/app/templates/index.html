@@ -1,26 +1,85 @@
 {% extends "parent-templates/access-content.html" %}
-{%block title %} 360 Sports {% endblock %}
-{% block content%}
-<main class="container mt-5">
-    <h1 class="text-center">Welcome to 360° Sports Watching Service!</h1>
-    <p class="text-center">
-        Experience sports like never before! Enjoy live feeds and connect with fellow sports enthusiasts.
-    </p>
+{% block title %} 360 Sports - Watch Live Sports, Anytime, Anywhere {% endblock %}
+{% block content %}
 
-    <div class="row mt-5">
-        <div class="col-md-6 offset-md-3">
-            <div class="card">
-                <img src="https://static1.squarespace.com/static/595ea7d6e58c62dce01d1625/t/5e5969dc3ca1436a76e4eac1/1564065314028/aspen-project-play-kids-sports-participation.jpeg?format=1500w" class="card-img-top" alt="Live Sports Feeds">
-                <div class="card-body">
-                  
-                    <p class="card-text">Watch your favorite games in real-time with our advanced streaming technology, and catch highlights later.</p>
-                    <center>
-                    <a href="#" class="btn btn-primary">Learn More</a>
-                    </center>
+<style>
+    /* Professional Background and Card Styling */
+    body {
+        background: linear-gradient(135deg, #004aad, #0a2540);
+        color: #f5f5f5;
+    }
+    .container {
+        background-color: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+        padding: 30px;
+    }
+    h1, h5 {
+        color: #004aad;
+        font-weight: 700;
+    }
+    .lead {
+        color: #666;
+    }
+    .btn-primary {
+        background-color: #004aad;
+        border: none;
+    }
+    .btn-outline-primary {
+        color: #004aad;
+        border-color: #004aad;
+    }
+    .btn-outline-primary:hover {
+        background-color: #004aad;
+        color: #ffffff;
+    }
+    .card {
+        border: none;
+        background-color: #f8f9fa; /* Light gray for better readability */
+    }
+    .card-img-top {
+        border-radius: 12px 12px 0 0;
+    }
+    .card-title {
+        color: #333; /* Dark gray for the card title */
+    }
+    .card-text {
+        color: #555; /* Medium gray for the card text */
+    }
+</style>
+
+
+<main class="container mt-5 p-4" style="background-color: #e0f7fa; border-radius: 10px;">
+    <!-- Hero Section -->
+    <section class="text-center mb-5">
+        <h1 class="display-4">Welcome to 360° Sports!</h1>
+        <p class="lead text-muted">Your ultimate destination for live sports and past games on demand.</p>
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg mt-3">Start Watching Now</a>
+    </section>
+
+    <!-- Features Section -->
+    <section class="row mt-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <img src="https://media.istockphoto.com/id/1043844354/photo/tv-camera-at-the-stadium-during-football-match.jpg?s=612x612&w=0&k=20&c=GPpWqaVJ1mxdAkz-ftmAtvTNX9DP-zwRksEzLPZQNks=" class="card-img-top" alt="Live Sports Feed">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Live Streaming</h5>
+                    <p class="card-text">Watch games in real-time with high-definition streaming and minimal delay.</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Learn More</a>
                 </div>
             </div>
         </div>
-    </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <img src="https://storage.googleapis.com/pod_public/750/180358.jpg" class="card-img-top" alt="Past Games">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Past Games</h5>
+                    <p class="card-text">Catch up on games you missed, available anytime with our on-demand feature.</p>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Watch Now</a>
+                </div>
+            </div>
+        </div>
+    </section>
 </main>
-<br></br>
+
 {% endblock %}

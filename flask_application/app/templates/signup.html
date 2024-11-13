@@ -2,30 +2,30 @@
 {% block title %}Sign Up{% endblock %}
 
 {% block content %}
-<main class="d-flex justify-content-center align-items-center vh-100">
-    <div class="card p-4" style="width: 400px;">
-        <h2 class="text-center mb-4">Sign Up</h2>
+<main class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #004aad, #0a2540);">
+    <div class="card p-5" style="width: 400px; border-radius: 10px; background-color: #1f2a36; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);">
+        <h2 class="text-center mb-4" style="color: #ffffff; font-weight: bold;">Sign Up</h2>
         <form action="{{ url_for('sign_up') }}" method="POST">
             {{ form.hidden_tag() }} <!-- CSRF token and hidden fields -->
 
-            <div class="mb-3">
-                {{ form.username.label(class_="form-label") }}
-                {{ form.username(class_="form-control", placeholder="Enter username") }}
+            <div class="mb-4">
+                {{ form.username.label(class_="form-label", style="color: #dfe6e9; font-size: 0.9rem;") }}
+                {{ form.username(class_="form-control", placeholder="Enter username", style="border-radius: 5px;") }}
             </div>
-            <div class="mb-3">
-                {{ form.email.label(class_="form-label") }}
-                {{ form.email(class_="form-control", placeholder="Enter email") }}
+            <div class="mb-4">
+                {{ form.email.label(class_="form-label", style="color: #dfe6e9; font-size: 0.9rem;") }}
+                {{ form.email(class_="form-control", placeholder="Enter email", style="border-radius: 5px;") }}
             </div>
-            <div class="mb-3">
-                {{ form.password.label(class_="form-label") }}
-                {{ form.password(class_="form-control", placeholder="Enter password") }}
+            <div class="mb-4">
+                {{ form.password.label(class_="form-label", style="color: #dfe6e9; font-size: 0.9rem;") }}
+                {{ form.password(class_="form-control", placeholder="Enter password", style="border-radius: 5px;") }}
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 mt-3">Sign Up</button>
+            <button type="submit" class="btn btn-light w-100 mt-3" style="border-radius: 5px; font-weight: bold;">Sign Up</button>
         </form>
 
-        <p class="text-center mt-3">Already have an account? 
-            <a href="{{ url_for('login') }}">Login</a>
+        <p class="text-center mt-3" style="color: #dfe6e9; font-size: 0.9rem;">Already have an account? 
+            <a href="{{ url_for('login') }}" style="color: #ffffff; text-decoration: underline;">Login</a>
         </p>
     </div>
 </main>

@@ -8,25 +8,25 @@
 {% endblock %}
 
 {% block content %}
-<main class="main-content-container">
+<main class="main-content-container" style="background: linear-gradient(135deg, #004aad, #0a2540); color: #ffffff;">
   <section class="camera-info-containter">
       <div class="main-camera">
-          <p class="h2 cam-heading">Live Feed</p>
+          <p class="h2 cam-heading" style="color: #ffffff;">Live Feed</p>
           <img style="height: 50%" class="main-feed cam-container" src="{{url_for('static', filename = 'images/server_messages/Go_Live_Display.JPG')}}" alt = "Camera Feed">
       </div>
       <div class="camera-buttons-container">
         {% if cameras %}
             {% for camera in cameras %}
-                <button class="btn btn-sm btn-info select-button" data-mxid="{{camera.mxid}}"> Cam {{loop.index}}</button>
+                <button class="btn btn-sm btn-info select-button" data-mxid="{{camera.mxid}}" style="color: white; border-color: white;"> Cam {{loop.index}}</button>
             {% endfor %}
         {% endif %}
       </div>
   </section>
   <section class="event-info-container">
-      <p class="h2">
+      <p class="h2" style="color: #ffffff;">
           {{event.event_name}}
       </p>
-      <p>
+      <p style="color: #ffffff;">
           {{event.notes}}
       </p>
   </section>
