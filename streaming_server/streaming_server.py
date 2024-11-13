@@ -208,7 +208,8 @@ def camera_server():
     buffer_size = int(os.getenv("BUFFER_SIZE"))
     rec_path = str(os.getenv("REC_PATH"))
     buffer_idle = float(os.getenv("IDLE"))
-    s = StreamingServer(IP, 12008, delay, buffer_size, rec_path, buffer_idle)
+    C_Port = int(os.getenv("CAM_PORT"))
+    s = StreamingServer(IP, C_Port, delay, buffer_size, rec_path, buffer_idle)
     s.start()
 
 def main():
