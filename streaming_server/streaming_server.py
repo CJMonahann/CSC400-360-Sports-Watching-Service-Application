@@ -15,12 +15,13 @@ s_buffers = {}
 s_request = {}
 
 class StreamingServer:
-     def __init__(self, address, port, delay, max, path):
+     def __init__(self, address, port, delay, max, path, idle):
           self.__address= (address, port) 
           self.__BUFFER = 68536
           self.__delay = delay
           self.__max = max
           self.__rec_path = path
+          self.__idle = idle
 
      def get_address(self):
           return self.__address
@@ -30,6 +31,9 @@ class StreamingServer:
      
      def get_path(self):
           return self.__rec_path
+     
+     def get_idle(self):
+          return self.__idle
 
      def receive_size(self):
           return self.__BUFFER
@@ -47,7 +51,7 @@ class StreamingServer:
           server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RECV_SIZE)
           server.bind(self.get_address())
 
-          thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay()])
+          thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay(), self.get_idle()])
           thread.start()
 
           monitor_thread = threading.Thread(target=monitor_buffers, args=[s_buffers, self.max_buffer_size()])
@@ -106,14 +110,14 @@ def create_cam_buffer(s_buffers, mxid):
            if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
                 s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
 
-def send_buffer_frames(s_buffers, s_requests, packet_delay):
+def send_buffer_frames(s_buffers, s_requests, packet_delay, buff_idle):
      print('Buffer space online')
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
      while True:
           try:
                for mxid, buffer in s_buffers.items():
-                         buffer.eval_idle(30)
+                         buffer.eval_idle(buff_idle)
                          curr_packet = buffer.release()
                          Flag = buffer.get_idle()
 
@@ -203,7 +207,8 @@ def main():
     delay = float(os.getenv("DELAY"))
     buffer_size = int(os.getenv("BUFFER_SIZE"))
     rec_path = str(os.getenv("REC_PATH"))
-    s = StreamingServer(IP, Port, delay, buffer_size, rec_path)
+    buffer_idle = float(os.getenv("IDLE"))
+    s = StreamingServer(IP, Port, delay, buffer_size, rec_path, buffer_idle)
     s.start()
 
 if __name__ == "__main__":

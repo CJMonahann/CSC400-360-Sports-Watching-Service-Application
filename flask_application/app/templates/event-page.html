@@ -10,9 +10,9 @@
 {% block content %}
 <main class="main-content-container">
   <section class="camera-info-containter">
+      <p class="h2 cam-heading">Live Feed</p>
       <div class="main-camera">
-          <p class="h2 cam-heading">Live Feed</p>
-          <img style="height: 50%" class="main-feed cam-container" src="{{url_for('static', filename = 'images/server_messages/Go_Live_Display.JPG')}}" alt = "Camera Feed">
+          <img class="main-feed cam-container" src="{{url_for('static', filename = 'images/server_messages/Go_Live_Display.JPG')}}" alt = "Camera Feed">
       </div>
       <div class="camera-buttons-container">
         {% if cameras %}
