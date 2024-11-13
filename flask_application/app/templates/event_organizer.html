@@ -1,81 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Organizer</title>
-    <!-- Bootstrap's CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/general.css') }}">
-</head>
-<body>
+{% extends "parent-templates/base-content.html" %}
+{% block title %}Event Organizer{% endblock %}
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-          <a class="navbar-brand" href="#">360&deg; Sports Watching Service</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="#">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Past Games</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#">Account</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
+{% block content %}
+<main class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #004aad, #0a2540);">
+    <div class="card p-3" style="width: 500px; border-radius: 20px; background-color: #1f2a36; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);">
+        <h2 class="text-center mb-3" style="color: #ffffff; font-weight: bold;">Event Organizer</h2>
+        
+        <form action="{{ url_for('event_organizer') }}" method="POST">
+            {{ form.hidden_tag() }} <!-- CSRF token and hidden fields -->
 
-      <main class="d-flex justify-content-center align-items-center vh-100">
-        <div class="card p-4" style="width: 400px;">
-            <h2 class="text-center mb-4">Event Organizer</h2>
+            <div class="mb-3">
+                {{ form.event_name.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.event_name(class_="form-control", placeholder="Enter event name", style="border-radius: 8px;") }}
+            </div>
             
-            <form action="{{ url_for('event_organizer') }}" method="POST">
-                {{ form.hidden_tag() }}
-                
-                <div class="mb-3">
-                    {{ form.event_name.label(class="form-label") }}
-                    {{ form.event_name(class="form-control", placeholder="Enter event name") }}
-                </div>
-                
-                <div class="mb-3">
-                    {{ form.sport.label(class="form-label") }}
-                    {{ form.sport(class="form-control", placeholder="Enter sport") }}
-                </div>
-                
-                <div class="mb-3">
-                    {{ form.date.label(class="form-label") }}
-                    {{ form.date(class="form-control") }}
-                </div>
-                
-                <div class="mb-3">
-                    {{ form.time.label(class="form-label") }}
-                    {{ form.time(class="form-control") }}
-                </div>
-                
-                <div class="mb-3">
-                    {{ form.notes.label(class="form-label") }}
-                    {{ form.notes(class="form-control", placeholder="Enter any additional notes", rows="3") }}
-                </div>
-                
-                <button type="submit" class="btn btn-primary w-100 mt-3">Submit</button>
-            </form>
-        </div>
-    </main>    
-    
+            <div class="mb-3">
+                {{ form.sport.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.sport(class_="form-control", placeholder="Enter sport", style="border-radius: 8px;") }}
+            </div>
 
-    <footer class="bg-light text-center p-3">
-        <p>&copy; 2024 360&deg; Sports Watching Service. All rights reserved.</p>
-    </footer>
+            <div class="mb-3">
+                {{ form.date.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.date(class_="form-control", style="border-radius: 8px;") }}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.time.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.time(class_="form-control", style="border-radius: 8px;") }}
+            </div>
 
-    <!-- Scripts for Bootstrap's JavaScript Functionality -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
-</body>
-</html>
+            <div class="mb-3">
+                {{ form.notes.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.notes(class_="form-control", placeholder="Enter any additional notes", rows="3", style="border-radius: 8px;") }}
+            </div>
+
+            <button type="submit" class="btn btn-light w-100 mt-3" style="border-radius: 8px; font-weight: bold; padding: 10px;">Submit</button>
+        </form>
+
+        <p class="text-center mt-3" style="color: #dfe6e9; font-size: 0.9rem;">
+            Want to view events? <a href="{{ url_for('events') }}" style="color: #ffffff; text-decoration: underline;">View Events</a>
+        </p>
+    </div>
+</main>
+{% endblock %}
