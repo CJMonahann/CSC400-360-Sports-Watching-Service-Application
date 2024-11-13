@@ -50,43 +50,6 @@ class CameraServer:
                h_thread = threading.Thread(target=handle_thread, args=[header, addr, data, PATH])
                h_thread.start()  
 
-def handle_thread(header, addr, data, PATH):
-     if (header == protocol.HEAD_CS): #collects camera frames from camera server
-
-          #Starts the process of recording frame data. 
-          #This thread ends after the frame has been recorded
-          rec_thread = threading.Thread(target=rec_event, args=[PATH, data["event_id"], data["mxid"], data["num_frame"], data["frame"]])
-          rec_thread.start()
-          
-          mxid = data["mxid"]
-
-          #one way in which buffer space can be created for camera information 
-          create_cam_buffer(s_buffers, mxid)
-          s_buffers[mxid].collect(data["frame"]) #send frame data of that camera to its unique buffer
-     
-     if (header == protocol.HEAD_REQUEST): #if user from Flask application is requesting cam frames
-          port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
-          mxid = data["mxid"]
-          address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
-
-          #create buffer space for camera if not already had
-          create_cam_buffer(s_buffers, mxid)
-
-          #create request reqistry for a user trying to access a camera
-          if mxid not in s_request:
-               s_request[mxid] = []
-          
-          s_request[mxid].append(address)
-
-     if (header == protocol.HEAD_REC):
-          print("starting sendback")
-          port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
-          mxid = data["mxid"]
-          event_id = data["id"]
-          address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
-          rec_req = threading.Thread(target=send_rec, args=[PATH, event_id, mxid, address])
-          rec_req.start()
-
 class StreamingServer:
      def __init__(self, IP, port, delay=0.08, max=100, path="", idle=30):
           self.__address= (IP, port) 
