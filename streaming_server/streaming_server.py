@@ -14,13 +14,50 @@ from PIL import Image
 s_buffers = {}
 s_request = {}
 
+class CameraServer:
+     def __init__(self, IP, port, path=""):
+          self.__address= (IP, port) 
+          self.__BUFFER = 68536
+          self.__rec_path = path
+
+     def get_address(self):
+          return self.__address
+     
+     def get_path(self):
+          return self.__rec_path
+
+     def receive_size(self):
+          return self.__BUFFER
+     
+     def start(self):
+          #define constants
+          RECV_SIZE = self.receive_size() #defines buffer size from which the server can recieve data
+          PATH = self.get_path() #defines the path to the recordings server where event footage is stored
+
+          #configure and start streaming server
+          server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+          server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RECV_SIZE)
+          server.bind(self.get_address())
+
+          print("Camera Only - Server is ready to recieve")
+          while True:
+               rec_data, addr = server.recvfrom(RECV_SIZE)
+               data_struct = pickle.loads(rec_data)
+               header = data_struct["header"]
+               data = data_struct["data"]
+
+               #start thread to handle recieved data
+               h_thread = threading.Thread(target=handle_thread, args=[header, addr, data, PATH])
+               h_thread.start()  
+
 class StreamingServer:
-     def __init__(self, address, port, delay, max, path):
-          self.__address= (address, port) 
+     def __init__(self, IP, port, delay=0.08, max=100, path="", idle=30):
+          self.__address= (IP, port) 
           self.__BUFFER = 68536
           self.__delay = delay
           self.__max = max
           self.__rec_path = path
+          self.__idle = idle
 
      def get_address(self):
           return self.__address
@@ -30,6 +67,9 @@ class StreamingServer:
      
      def get_path(self):
           return self.__rec_path
+     
+     def get_idle(self):
+          return self.__idle
 
      def receive_size(self):
           return self.__BUFFER
@@ -47,7 +87,7 @@ class StreamingServer:
           server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, RECV_SIZE)
           server.bind(self.get_address())
 
-          thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay()])
+          thread = threading.Thread(target=send_buffer_frames, args=[s_buffers, s_request, self.get_delay(), self.get_idle()])
           thread.start()
 
           monitor_thread = threading.Thread(target=monitor_buffers, args=[s_buffers, self.max_buffer_size()])
@@ -106,17 +146,19 @@ def create_cam_buffer(s_buffers, mxid):
            if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
                 s_buffers[mxid] = Buffer.Buffer() #create camera-specific buffer if not
 
-def send_buffer_frames(s_buffers, s_requests, packet_delay):
+def send_buffer_frames(s_buffers, s_requests, packet_delay, buff_idle):
      print('Buffer space online')
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
      while True:
           try:
                for mxid, buffer in s_buffers.items():
+                         buffer.eval_idle(buff_idle)
                          curr_packet = buffer.release()
+                         Flag = buffer.get_idle()
 
                          if mxid in s_requests: #if we have a request for a particular camera
-                              data_struct = {"data": curr_packet}
+                              data_struct = {"data": curr_packet, "flag": Flag}
                               sent_data = pickle.dumps(data_struct)
                               req_list = s_requests[mxid] #gather all addresses that requested a frame
                               for addr in req_list:
@@ -194,15 +236,28 @@ def return_frames(directory):
      with os.scandir(directory) as frames:
           return [img.name for img in frames if img.is_file()]
 
+def camera_server():
+    load_dotenv()
+    IP = os.getenv("SERVER_IP")
+    C_Port = int(os.getenv("CAM_PORT"))
+    rec_path = str(os.getenv("REC_PATH"))
+    s = CameraServer(IP, C_Port, rec_path)
+    s.start()
+
 def main():
+    #create independent camera server/channel to only recieve camera 
+    # frames on a different port than those that accept user request
+    CS = threading.Thread(target=camera_server)
+    CS.start() #this is used so that the cameras send incoming frames to a seperate port/channel than user requests
     load_dotenv()
     IP = os.getenv("SERVER_IP")
     Port = int(os.getenv("SERVER_PORT"))
     delay = float(os.getenv("DELAY"))
     buffer_size = int(os.getenv("BUFFER_SIZE"))
     rec_path = str(os.getenv("REC_PATH"))
-    s = StreamingServer(IP, Port, delay, buffer_size, rec_path)
-    s.start()
+    buffer_idle = float(os.getenv("IDLE"))
+    s = StreamingServer(IP, Port, delay, buffer_size, rec_path, buffer_idle)
+    s.start() #will handle user request
 
 if __name__ == "__main__":
     main()

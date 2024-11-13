@@ -14,6 +14,8 @@ cameras have detected motion, which is handled within the
 class Buffer:
     def __init__(self):
         self.buffer = [] #uses a list
+        self.idle = 0
+        self.end = False
 
     #allows data to be entered into buffer at the beginning
     def collect(self, data):
@@ -24,6 +26,7 @@ class Buffer:
         if not(self.is_empty()):
             return self.buffer.pop()
         else:
+            self.inc_idle()
             return b''
     
     #collects len of buffer - how many data frames as stored
@@ -37,3 +40,22 @@ class Buffer:
     #clears buffer of any image frames
     def reset(self):
         self.buffer.clear()
+
+    def inc_idle(self):
+        self.idle += 1
+
+    def set_end(self):
+        self.end = True
+
+    def reset_idle(self):
+        self.idle = 0
+        self.end = False
+    
+    def eval_idle(self, time):
+        if not(self.is_empty()):
+            self.reset_idle()
+        elif self.idle >= time:
+            self.set_end()
+    
+    def get_idle(self):
+        return self.end
