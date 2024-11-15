@@ -48,11 +48,9 @@ def sign_up():
     print("render sign-up.html")
     return render_template('signup.html', form=form)
 
-@app.route('/events')
-def events():
-    events = Event.query.all()  # Fetch all events
-    return render_template('events.html', events=events)
-
+@app.route('/events_eo/event-page-<int:id>')
+@app.route('/events_sm/event-page-<int:id>')
+@app.route('/events/event-page-<int:id>')
 @app.route('/event-page-<int:id>')
 def event_page(id):
     id = int(id)
@@ -91,7 +89,6 @@ def login():
         print("Form errors:", form.errors)  # Debug statement
 
     return render_template('login.html', form=form)
-
 
 @app.route('/video/CAM-<string:MXID>')
 def video(MXID):
@@ -137,20 +134,27 @@ def past_game_page(id):
     return render_template('past_game_page.html', event=event, cameras=cameras)
     
 
-@app.route('/event_organizer', methods=['GET', 'POST'])
-def event_organizer():
+@app.route('/event_organizer/<int:id>', methods=['GET', 'POST'])
+def event_organizer(id):
     form = eventOrganizerForm()
     if form.validate_on_submit():
-        new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,time=form.time.data, notes=form.notes.data)
+        print("EVENT CREATED!!!")
+        new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,time=form.time.data, notes=form.notes.data, s_id=id)
         db.session.add(new_event)
         db.session.commit()
-        return redirect(url_for('events_eo'))
-    return render_template('event_organizer.html', form=form)
+        return redirect(url_for('route_events', id=id))
+    return render_template('event_organizer.html', form=form, id=id)
 
+@app.route('/events/<int:id>')
+def events(id):
+    id = int(id)
+    events = Event.query.filter_by(s_id=id).all()
+    return render_template('events.html', events=events)
 
-@app.route('/events_eo', methods=['GET', 'POST'])
-def events_eo():
-    events = Event.query.all()  # Fetch all events
+@app.route('/events_eo/<int:id>', methods=['GET', 'POST'])
+def events_eo(id):
+    id = int(id)
+    events = Event.query.filter_by(s_id=id).all()
 
     if request.method == 'POST':
         action = request.form.get('action')  # Get the action (modify, delete, stream)
@@ -165,7 +169,7 @@ def events_eo():
                 print("Event deleted")
             else:
                 print("Event not found")  # Optional: handle case where event is not found
-            return redirect(url_for('events_eo'))
+            return redirect(url_for('events_eo', id=id))
         
         elif action == 'modify_event':
             # Handle event modification
@@ -183,14 +187,24 @@ def events_eo():
             else:
                 print("Event not found")  # Optional: handle case where event is not found
             
-            return redirect(url_for('events_eo'))
+            return redirect(url_for('events_eo', id=id))
 
-    return render_template('events_eo.html', events=events)  # Pass events to the template
+    return render_template('events_eo.html', events=events, id=id)  # Pass events to the template
 
+@app.route('/get/events/<int:id>')
+def route_events(id):
+    id = int(id) #represenrs a site ID
+    if session['is_eo']:
+        return redirect(url_for('events_eo', id=id))
+    elif session['is_sm']:
+        return redirect(url_for('events_sm', id=id))
+    else:
+        return redirect(url_for('events', id=id))
 
-@app.route('/events_sm', methods=['GET', 'POST'])
-def events_sm():
-    events = Event.query.all()  # Fetch all events
+@app.route('/events_sm/<int:id>', methods=['GET', 'POST'])
+def events_sm(id):
+    id = int(id)
+    events = Event.query.filter_by(s_id=id).all()
 
     if request.method == 'POST':
         action = request.form.get('action')  # Get the action (modify, delete, stream)
@@ -205,7 +219,7 @@ def events_sm():
                 print("Event deleted")
             else:
                 print("Event not found")  # Optional: handle case where event is not found
-            return redirect(url_for('events_sm'))
+            return redirect(url_for('events_sm', id=id))
         
         elif action == 'modify_event':
             # Handle event modification
@@ -223,9 +237,9 @@ def events_sm():
             else:
                 print("Event not found")  # Optional: handle case where event is not found
             
-            return redirect(url_for('events_sm'))
+            return redirect(url_for('events_sm', id=id))
     
-    return render_template('test_site_manager.html', events=events)  # Pass events to the template
+    return render_template('site_manager.html', events=events, id=id)  # Pass events to the template
 
 @app.route('/organizations')
 def organizations():
@@ -302,9 +316,14 @@ def config_site_ID(id):
 
 @app.route('/return/home')
 def return_home():
+    return redirect(url_for('index'))
+
+'''
+def return_home():
     if session['is_eo']:
         return redirect(url_for('events_eo'))
     elif session['is_sm']:
         return redirect(url_for('events_sm'))
     else:
         return redirect(url_for('events'))
+'''

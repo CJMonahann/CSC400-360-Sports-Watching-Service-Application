@@ -83,6 +83,7 @@ class Site(db.Model):
 class Event(db.Model):
     __tablename__ = 'Event'
     id = db.Column(db.Integer, primary_key=True)
+    s_id = db.Column(db.Integer, ForeignKey('Site.id', ondelete='CASCADE'), nullable=False)
     event_name = db.Column(db.String(100), nullable=False)
     sport = db.Column(db.String(50), nullable=False)
     date = db.Column(db.Date, nullable=False)
