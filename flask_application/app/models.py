@@ -63,6 +63,21 @@ def create_site_manager(target, connection, **kw):
 event.listen(User.__table__, "after_create", create_site_manager)
 
 
+class Organization(db.Model):
+    __tablename__ = 'Organization'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    street_addr = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(255), nullable=False)
+    state = db.Column(db.String(255), nullable=False)
+
+class Site(db.Model):
+    __tablename__ = 'Site'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    about = db.Column(db.String(100))
+    s_id = db.Column(db.String(50))
+
 class Event(db.Model):
     __tablename__ = 'Event'
     id = db.Column(db.Integer, primary_key=True)

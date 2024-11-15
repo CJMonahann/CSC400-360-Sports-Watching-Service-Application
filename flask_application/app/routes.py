@@ -234,6 +234,11 @@ def events_sm():
     
     return render_template('test_site_manager.html', events=events)  # Pass events to the template
 
+@app.route('/sites')
+def general_sites():
+    sites = Event.query.all()  # Fetch all sites
+    return render_template('sites_general.html', sites=sites)  # Pass sites to the template
+
 @app.route('/config-cams/<int:id>', methods=['GET', 'POST'])
 def config_cams(id):
     id = int(id)
