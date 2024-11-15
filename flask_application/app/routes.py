@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
-from app.models import User, Event, Camera #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm #makes forms functional in routes
+from app.models import User, Event, Camera, Site, Organization #imports like this will import the databse relations we have made in the 'models.py' page
+from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -84,15 +84,8 @@ def login():
             print("Session username set to:", input_username)  # Debug statement
 
             # Redirect based on user role
-            if new_user.is_eo:
-                print("Redirecting admin to index page...")  # Debug statement
-                return redirect(url_for('events_eo'))
-            elif new_user.is_sm:
-                print("Redirecting admin to index page...")  # Debug statement
-                return redirect(url_for('events_sm'))
-            else:
-                print("Redirecting to event page...")  # Debug statement
-                return redirect(url_for('events'))
+            return redirect(url_for('organizations'))
+
     else:
         print("Form validation failed.")  # Debug statement
         print("Form errors:", form.errors)  # Debug statement
@@ -234,10 +227,52 @@ def events_sm():
     
     return render_template('test_site_manager.html', events=events)  # Pass events to the template
 
-@app.route('/sites')
-def general_sites():
-    sites = Event.query.all()  # Fetch all sites
-    return render_template('sites_general.html', sites=sites)  # Pass sites to the template
+@app.route('/organizations')
+def organizations():
+    orgs = Organization.query.all()  # Fetch all organizations
+    if session['is_sm']:
+        return render_template('orgs_admin.html', orgs=orgs)  # Pass sites to the template
+    else:
+        return render_template('orgs_general.html', orgs=orgs)  # Pass sites to the template
+    
+@app.route('/create/org', methods=['GET', 'POST'])
+def create_org():
+    form = OrgForm()
+    if form.validate_on_submit():
+        new_site = Organization(name=form.name.data, street=form.street.data, city=form.city.data, state=form.state.data, about=form.about.data)
+        db.session.add(new_site)
+        db.session.commit()
+        print("organization data was saved!")
+        return redirect(url_for('organizations'))
+    
+    return render_template('create_org.html', form=form)
+
+@app.route('/sites/<int:id>')
+def sites(id):
+    id = int(id) #organization id
+    #get any related cameras via the forein key within the Camera table
+    sites = Site.query.filter_by(org_id=id).all()
+    org = Organization.query.get(id)
+    org_name = org.name
+    if session['is_sm']: 
+        return render_template('sites_admin.html', sites=sites, id=id, name=org_name)  # Pass sites to the template
+    else:
+        return render_template('sites_general.html', sites=sites, name=org_name)  # Pass sites to the template
+
+@app.route('/create/site/<int:id>', methods=['GET', 'POST'])
+def create_site(id):
+    id = int(id) #this represents the organization id, which will be a foreign key in the org
+    form = SiteForm()
+    org = Organization.query.get(id)
+    org_name = org.name
+    if form.validate_on_submit():
+        new_site = Site(org_id = id, name=form.name.data, about=form.about.data, s_id=form.s_id.data)
+        db.session.add(new_site)
+        db.session.commit()
+        print("site data was saved!")
+        return redirect(url_for('sites', id=id))
+    
+    return render_template('create_site.html', form=form, name=org_name)
 
 @app.route('/config-cams/<int:id>', methods=['GET', 'POST'])
 def config_cams(id):

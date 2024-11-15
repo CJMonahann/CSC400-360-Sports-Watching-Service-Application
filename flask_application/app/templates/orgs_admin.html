@@ -107,6 +107,9 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="/create/org">Create Organization</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">Account</a>
                     </li>
                 </ul>
@@ -118,19 +121,20 @@
     <main class="container mt-5 p-4" style="background-color: #e0f7fa; border-radius: 10px;">
       <!-- Hero Section -->
       <section class="text-center mb-5">
-          <h1 class="display-4" style="color: #004aad; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">Available Sites For {{name}}</h1>
-          <p class="lead text-muted">Watch Events Unique to Each Site!</p>
+          <h1 class="display-4" style="color: #004aad; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">Select an Organization and Start Watching!</h1>
+          <p class="lead text-muted">Select an Organization to View Available Sites!</p>
       </section>
   
       <!-- Events Grid -->
       <div class="row mt-5">
-          {% for site in sites %}
+          {% for org in orgs %}
           <div class="col-md-6 col-lg-4 mb-4">
               <div class="card shadow-sm rounded">
                   <div class="card-body">
-                      <h5 class="card-title text-center">{{ site.name }}</h5>
-                      <p class="card-text">{{ site.about }}</p>
-                      <a href="/get/site/{{site.id}}" class="btn btn-info btn-sm"> View Events </a>
+                      <h5 class="card-title text-center">{{ org.name }}</h5>
+                      <p class="card-text">{{org.street}},{{org.city}},{{org.state}}</p>
+                      <p class="card-text">{{ org.about }}</p>
+                      <a href="/sites/{{org.id}}" class="btn btn-info btn-sm"> View Events </a>
                   </div>
               </div>
           </div>

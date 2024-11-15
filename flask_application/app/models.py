@@ -67,13 +67,15 @@ class Organization(db.Model):
     __tablename__ = 'Organization'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
-    street_addr = db.Column(db.String(255), nullable=False)
+    street = db.Column(db.String(255), nullable=False)
     city = db.Column(db.String(255), nullable=False)
     state = db.Column(db.String(255), nullable=False)
+    about = db.Column(db.String(255))
 
 class Site(db.Model):
     __tablename__ = 'Site'
     id = db.Column(db.Integer, primary_key=True)
+    org_id = db.Column(db.Integer, ForeignKey('Organization.id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     about = db.Column(db.String(100))
     s_id = db.Column(db.String(50))

@@ -43,5 +43,15 @@ class CameraForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class SiteForm(FlaskForm):
-    site = StringField(validators=[DataRequired()])
+    name = StringField(validators=[DataRequired()])
+    about = StringField(validators=[DataRequired()])
+    s_id = StringField(validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class OrgForm(FlaskForm):
+    name = StringField(validators=[DataRequired()])
+    street = StringField(validators=[DataRequired()])
+    city = StringField(validators=[DataRequired()])
+    state = StringField(validators=[DataRequired()])
+    about = StringField(validators=[DataRequired()])
     submit = SubmitField('Submit')
