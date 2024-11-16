@@ -48,6 +48,10 @@ class SiteForm(FlaskForm):
     s_id = StringField(validators=[DataRequired()])
     submit = SubmitField('Submit')
 
+class UpdateSiteForm(FlaskForm):
+    s_id = StringField(validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
 class OrgForm(FlaskForm):
     name = StringField(validators=[DataRequired()])
     street = StringField(validators=[DataRequired()])

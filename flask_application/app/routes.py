@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
 from app.models import User, Event, Camera, Site, Organization #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm #makes forms functional in routes
+from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm, UpdateSiteForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -55,8 +55,9 @@ def sign_up():
 def event_page(id):
     id = int(id)
     event = Event.query.get(id) #gets the event data needed
-    #get any related cameras via the forein key within the Camera table
-    cameras = Camera.query.filter_by(event_id=id).all()
+    site_id = event.s_id
+    #get any related cameras of the particular site for which the event is configured
+    cameras = Camera.query.filter_by(s_id=site_id).all()
     return render_template('event-page.html', event=event, cameras=cameras, id=id)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -129,8 +130,9 @@ def recording(MXID):
 def past_game_page(id):
     id = int(id)
     event = Event.query.get(id) #gets the event data needed
-    #get any related cameras via the forein key within the Camera table
-    cameras = Camera.query.filter_by(event_id=id).all()
+    site_id = event.s_id
+    #get any related cameras of the particular site for which the event is configured
+    cameras = Camera.query.filter_by(s_id=site_id).all()
     return render_template('past_game_page.html', event=event, cameras=cameras)
     
 
@@ -290,27 +292,31 @@ def create_site(id):
 
 @app.route('/config-cams/<int:id>', methods=['GET', 'POST'])
 def config_cams(id):
-    id = int(id)
+    id = int(id) #represents the Site ID
     form = CameraForm()
     if form.validate_on_submit():
-        new_camera = Camera(event_id=id, mxid=form.mxid.data)
+        site = Site.query.get(id)
+        org_id = site.org_id #get the Organization ID to redirect to appropriate sites page after update
+        print("FORM VALIDATED!!")
+        new_camera = Camera(s_id=id, mxid=form.mxid.data)
         db.session.add(new_camera)
         db.session.commit()
         print("data was saved!")
-        return redirect(url_for('events_sm'))
+        return redirect(url_for('sites', id=org_id))
     
     return render_template('config_cams.html', form=form, id=id)
 
 @app.route('/config-site-ID/<int:id>', methods=['GET', 'POST'])
 def config_site_ID(id):
-    id = int(id)
-    form = SiteForm()
+    id = int(id) #represents the site, id
+    form = UpdateSiteForm()
     if form.validate_on_submit():
-        site_ID = form.site.data
-        Event.query.filter_by(id=id).update({"site": site_ID})
+        site_id = form.s_id.data
+        site = Site.query.get(id)
+        site.s_id = site_id
         db.session.commit()
-        print("Site ID was updated!", site_ID)
-        return redirect(url_for('events_sm'))
+        org_id = site.org_id #get the Organization ID to redirect to appropriate sites page after update
+        return redirect(url_for('sites', id=org_id))
     
     return render_template('config_site_ID.html', form=form, id=id)
 

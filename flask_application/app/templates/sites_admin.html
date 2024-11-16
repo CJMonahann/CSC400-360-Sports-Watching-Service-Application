@@ -133,7 +133,11 @@
                   <div class="card-body">
                       <h5 class="card-title text-center">{{ site.name }}</h5>
                       <p class="card-text">{{ site.about }}</p>
+                      <div class = "btn-group mt-3">
                       <a href="/get/events/{{site.id}}" class="btn btn-info btn-sm"> View Events </a>
+                      <a href="/config-cams/{{site.id}}" class="btn btn-primary btn-sm"> Set Camera </a>
+                      <a href="/config-site-ID/{{site.id}}" class="btn btn-info btn-sm"> Update ID </a>
+                      </div>
                   </div>
               </div>
           </div>
