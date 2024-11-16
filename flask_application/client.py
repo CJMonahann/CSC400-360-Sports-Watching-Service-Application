@@ -39,7 +39,7 @@ class Client:
     def get_error_img(self):
          return self.ERROR_IMG
     
-    def get_recording(self, camera, site_id):
+    def get_recording(self, camera, s_id, e_id, date, s_time, e_time):
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
           server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.buffer_size())
           server.bind(self.get_flask_addr())
@@ -47,7 +47,7 @@ class Client:
           #create package to be sent to streaming server for a specific camera
           data_struct = {"header": protocol.HEAD_REC, "data":{"port": self.flask_port(), 
                                                                   "mxid": camera,
-                                                                  "id": site_id}}
+                                                                  "id": s_id}}
           msg = pickle.dumps(data_struct)
 
           #send message to streaming server for specific camera

@@ -13,6 +13,8 @@ import base64
 import os
 from dotenv import load_dotenv
 import PortCounter
+import socket
+import protocol
 
 #global variables
 port_obj = PortCounter.PortCounter(int(os.getenv('FLASK_PORT')))
@@ -112,7 +114,13 @@ def recording(MXID):
     MXID = str[0]
     event_id = int(str[1])
     event = Event.query.get(event_id) #gets the event data needed
-    site_id = event.site
+    s_id = Site.query.get(event.s_id).s_id
+    e_id = event.e_id
+    date = event.date
+    s_time = event.s_time
+    e_time = event.e_time
+    print(s_id, e_id, date, s_time, e_time)
+
     try:
         load_dotenv('.env')
         S_IP = os.getenv('STREAM_SERVER_IP')
@@ -121,10 +129,11 @@ def recording(MXID):
         F_Port = port_obj.get_port()  # Dynamically assign new internal-port number
         port_obj.inc_port()  # Increment to avoid duplicate ports
         socket = client.Client(S_IP, S_Port, F_IP, F_Port, ERROR_IMG)
-        return Response(socket.get_recording(MXID, site_id), mimetype='multipart/x-mixed-replace; boundary=frame')
+        return Response(socket.get_recording(MXID, s_id, e_id, date, s_time, e_time), mimetype='multipart/x-mixed-replace; boundary=frame')
     except:
         new_url = f'/video/CAM-<string:{MXID}>'
         return redirect(new_url)
+
 
 @app.route('/past/games/<int:id>')
 def past_game_page(id):
@@ -144,8 +153,31 @@ def event_organizer(id):
         new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,s_time=form.s_time.data, e_time=form.e_time.data, notes=form.notes.data, s_id=id, e_id=form.e_id.data)
         db.session.add(new_event)
         db.session.commit()
+        send_event_info(new_event.id, form.e_id.data, form.date.data, form.s_time.data, form.e_time.data)
         return redirect(url_for('route_events', id=id))
     return render_template('event_organizer.html', form=form, id=id)
+
+def send_event_info(id, e_id, date, s_time, e_time):
+    #get streaming server information 
+    S_IP = os.getenv('STREAM_SERVER_IP')
+    S_Port = int(os.getenv('STREAM_SERVER_PORT'))
+
+    event = Event.query.get(id) #gets the event data needed
+    s_id = Site.query.get(event.s_id).s_id #gets the site ID configured on a camera server to match
+    data_struct = {"header": protocol.HEAD_UPE, "data":{
+        "s_id": s_id,
+        "e_id": e_id,
+        "date": date,
+        "s_time": s_time,
+        "e_time": e_time
+    }}
+    msg = pickle.dumps(data_struct)
+
+    #send message to streaming server to update information about a particular event
+    sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sending_socket.sendto(msg,(S_IP, S_Port))
+    sending_socket.close()
+    
 
 @app.route('/events/<int:id>')
 def events(id):

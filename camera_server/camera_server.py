@@ -10,6 +10,7 @@ import pickle
 import protocol
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 class Timer:
     def __init__(self, duration = 30):
@@ -80,8 +81,10 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         address = (server_IP, server_port)
         THRESHOLD = float(os.getenv('MOTION_THRESHOLD'))
-        EVENT_ID = str(os.getenv('EVENT_ID'))
+        S_ID = str(os.getenv('SITE_ID'))
         SEND_DELAY = float(os.getenv('SEND_DELAY'))
+        now = datetime.now()
+        DATE = now.date().strftime('%Y-%m-%d') #will be used to organize recorded event on streaming server
 
         #this will be the frame we use for the optical flow - grayscale to detect motion
         gray_frame = q_rgb['cam'].get().getCvFrame()
@@ -90,9 +93,12 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
         #we will now detect motion and only send a frame if motion is detected
         num_frame = 0
         while True:
+            #current time in which frame is sent.
+            #used to organize recorded event on streaming server
+            TIME = now.time().strftime("%H:%M:%S")
 
             frame = q_rgb['cam'].get().getCvFrame() #collect a frame from feed
-            packet = pack_frame(EVENT_ID, mxid, num_frame, frame) #this will be the frame we send via UDP
+            packet = pack_frame(S_ID, mxid, num_frame, frame, DATE, TIME) #this will be the frame we send via UDP
            
             if frame is not None:
                 curr_gray = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY) #current grayscale image for comparison
@@ -124,7 +130,7 @@ def stream_motion_video(q_rgb, mxid, server_IP, server_port, timer_obj):
             if cv2.waitKey(1) == ord('q'):
                 break
 
-def pack_frame(event_id, mxid, num_frame, frame):
+def pack_frame(S_ID, mxid, num_frame, frame, DATE, TIME):
     res_frame = imutils.resize(frame, width=400)
     _, new_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
     byte_packet = base64.b64encode(new_frame)
@@ -132,10 +138,12 @@ def pack_frame(event_id, mxid, num_frame, frame):
     data_struct = {"header":header, 
                    "data":
                    {
-                   "event_id": event_id,
+                   "S_ID": S_ID,
                    "mxid":mxid,
                    "num_frame": str(num_frame), 
-                   "frame":byte_packet
+                   "frame":byte_packet,
+                   "DATE": DATE,
+                   "TIME": TIME
                    }
                    }
     packet = pickle.dumps(data_struct)

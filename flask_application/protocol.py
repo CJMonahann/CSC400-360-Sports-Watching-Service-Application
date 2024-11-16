@@ -7,6 +7,7 @@ HEAD_REQUEST='REQ'
 HEAD_DISCONNECT = 'DIS'
 HEAD_CONN = 'CON'
 HEAD_REC = 'REC'
+HEAD_UPE = 'UPE' #update event, used to tell streaming server of new event
 HEAD_ERROR='ERR'
 
 # we prepare the message that are sent between server and client as the header + content
