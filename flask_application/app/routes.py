@@ -373,13 +373,3 @@ def event_ID(id):
 @app.route('/return/home')
 def return_home():
     return redirect(url_for('index'))
-
-'''
-def return_home():
-    if session['is_eo']:
-        return redirect(url_for('events_eo'))
-    elif session['is_sm']:
-        return redirect(url_for('events_sm'))
-    else:
-        return redirect(url_for('events'))
-'''

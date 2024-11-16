@@ -135,12 +135,9 @@ def handle_thread(header, addr, data, PATH):
           s_request[mxid].append(address)
 
      if (header == protocol.HEAD_REC):
-          print("starting sendback")
           port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
-          mxid = data["mxid"]
-          event_id = data["id"]
           address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
-          rec_req = threading.Thread(target=send_rec, args=[PATH, event_id, mxid, address])
+          rec_req = threading.Thread(target=send_rec, args=[PATH, data["mxid"], address, data["s_id"], data["e_id"], data["date"], data["s_time"], data["e_time"]])
           rec_req.start()
 
      if(header == protocol.HEAD_UPE):
@@ -293,14 +290,21 @@ def rec_event(PATH, S_ID, mxid, num_frame, data, DATE, TIME):
           with open(curr_path, "wb") as frame:
                frame.write(dec_data)
      
-def send_rec(PATH, event_id, mxid, addr):
+def send_rec(PATH, mxid, addr, S_ID, e_id, DATE, s_time, e_time):
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+     time_range = f"{s_time}-{e_time}"
+     time_range = time_range.replace(":", "-") #needed, as we can't create a directory with ':'
+     date = DATE.strftime('%Y-%m-%d')
+     S_dir = os.path.join(PATH, S_ID)
+     D_dir = os.path.join(S_dir, date)
+     T_dir = os.path.join(D_dir, time_range)
+     E_dir = os.path.join(T_dir, e_id)
+     cam_dir = os.path.join(E_dir, mxid)
 
-     #check to see if the event directory, and needed camera sub-directory exist
-     event_dir = os.path.join(PATH, event_id)
-     cam_dir = os.path.join(event_dir, mxid)
-
-     if (os.path.exists(event_dir) and os.path.isdir(event_dir)) and \
+     if (os.path.exists(S_dir) and os.path.isdir(S_dir)) and \
+     (os.path.exists(D_dir) and os.path.isdir(D_dir)) and \
+     (os.path.exists(T_dir) and os.path.isdir(T_dir)) and \
+     (os.path.exists(E_dir) and os.path.isdir(E_dir)) and \
      (os.path.exists(cam_dir) and os.path.isdir(cam_dir)): #if the recording is had on the server
           
           frames = return_frames(cam_dir) #a list of all frame names had in the directory
@@ -313,15 +317,18 @@ def send_rec(PATH, event_id, mxid, addr):
                     res_frame = imutils.resize(new_frame, width=400)
                     _, final_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                     byte_packet = base64.b64encode(final_frame) #encode so that it fits in UDP buffer space
-                    data_struct = {"data": byte_packet}
+                    data_struct = {"data": byte_packet, "flag": False}
                     sent_data = pickle.dumps(data_struct)
                     sending_socket.sendto(sent_data, addr)
+          sending_socket.close()
                     
      else:
           #send an empty byte package to denote that the directory/reocrdings isn't/arent had
-          data_struct = {"data": b""} #triggers event on web server to tell user no frames are had
+          print("NO RECORDING!!")
+          data_struct = {"data": None, "flag": True} #triggers event on web server to tell user no frames are had
           sent_data = pickle.dumps(data_struct)
-          sending_socket.sendto(sent_data, addr)          
+          sending_socket.sendto(sent_data, addr)
+          sending_socket.close()        
 
 
 def return_frames(directory):
