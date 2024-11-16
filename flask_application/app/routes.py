@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
 from app.models import User, Event, Camera, Site, Organization #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm, UpdateSiteForm #makes forms functional in routes
+from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm, UpdateSiteForm, UpdateEventForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -128,7 +128,7 @@ def recording(MXID):
 
 @app.route('/past/games/<int:id>')
 def past_game_page(id):
-    id = int(id)
+    id = int(id) #represents event ID
     event = Event.query.get(id) #gets the event data needed
     site_id = event.s_id
     #get any related cameras of the particular site for which the event is configured
@@ -141,7 +141,7 @@ def event_organizer(id):
     form = eventOrganizerForm()
     if form.validate_on_submit():
         print("EVENT CREATED!!!")
-        new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,time=form.time.data, notes=form.notes.data, s_id=id)
+        new_event = Event(event_name=form.event_name.data, sport=form.sport.data, date=form.date.data,s_time=form.s_time.data, e_time=form.e_time.data, notes=form.notes.data, s_id=id, e_id=form.e_id.data)
         db.session.add(new_event)
         db.session.commit()
         return redirect(url_for('route_events', id=id))
@@ -181,7 +181,8 @@ def events_eo(id):
                 event.event_name = request.form.get('event_name')
                 event.sport = request.form.get('sport')
                 event.date = request.form.get('date')
-                event.time = request.form.get('time')
+                event.s_time = request.form.get('s_time')
+                event.e_time = request.form.get('e_time')
                 event.notes = request.form.get('notes')
                 
                 db.session.commit()  # Save changes to the database
@@ -231,7 +232,8 @@ def events_sm(id):
                 event.event_name = request.form.get('event_name')
                 event.sport = request.form.get('sport')
                 event.date = request.form.get('date')
-                event.time = request.form.get('time')
+                event.s_time = request.form.get('s_time')
+                event.e_time = request.form.get('e_time')
                 event.notes = request.form.get('notes')
                 
                 db.session.commit()  # Save changes to the database
@@ -319,6 +321,22 @@ def config_site_ID(id):
         return redirect(url_for('sites', id=org_id))
     
     return render_template('config_site_ID.html', form=form, id=id)
+
+@app.route('/set/event//<int:id>', methods=['GET', 'POST'])
+def event_ID(id):
+    id = int(id) #represents the event id
+    form = UpdateEventForm()
+    if form.validate_on_submit():
+        event_id = form.e_id.data
+        event = Event.query.get(id)
+        event.e_id = event_id
+        db.session.commit()
+        #now, we get the site the event pertains to in order to route back to appropriate event page
+        s_id = event.s_id #this is the side ID used within the event as a foreign key
+        print(f"EVENT ID Updated! - {event_id}")
+        return redirect(url_for('route_events', id=s_id))
+    
+    return render_template('config_event_ID.html', form=form, id=id)
 
 @app.route('/return/home')
 def return_home():

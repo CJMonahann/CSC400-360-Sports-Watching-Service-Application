@@ -87,11 +87,12 @@ class Event(db.Model):
     event_name = db.Column(db.String(100), nullable=False)
     sport = db.Column(db.String(50), nullable=False)
     date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
+    s_time = db.Column(db.Time, nullable=False) #start time
+    e_time = db.Column(db.Time, nullable=False) #end time
     notes = db.Column(db.Text)
     port = db.Column(db.Integer)
     ip = db.Column(db.String(50))
-    site = db.Column(db.String(50))
+    e_id = db.Column(db.String(50)) #event ID
     
 class Camera(db.Model):
     __tablename__ = 'Camera'

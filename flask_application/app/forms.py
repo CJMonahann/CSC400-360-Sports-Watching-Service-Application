@@ -17,7 +17,9 @@ class eventOrganizerForm(FlaskForm):
     event_name = StringField("Event Name", validators=[DataRequired()])
     sport = StringField("Sport", validators=[DataRequired()])
     date = DateField("Date", validators=[DataRequired()])
-    time = TimeField("Time", validators=[DataRequired()])
+    s_time = TimeField("Start Time", validators=[DataRequired()]) #start time
+    e_time = TimeField("End Time", validators=[DataRequired()]) #end time
+    e_id = StringField("Event ID", validators=[DataRequired()]) #event ID
     notes = TextAreaField("Additional Notes")
     submit = SubmitField("Submit")
 
@@ -50,6 +52,10 @@ class SiteForm(FlaskForm):
 
 class UpdateSiteForm(FlaskForm):
     s_id = StringField(validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class UpdateEventForm(FlaskForm):
+    e_id = StringField(validators=[DataRequired()])
     submit = SubmitField('Submit')
 
 class OrgForm(FlaskForm):

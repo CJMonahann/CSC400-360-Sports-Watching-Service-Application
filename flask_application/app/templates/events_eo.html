@@ -107,7 +107,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('event_organizer', id=id) }}">Event Organizer Settings</a>
+                        <a class="nav-link" href="{{ url_for('event_organizer', id=id) }}">Create Event</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('login') }}">Account</a>
@@ -134,11 +134,14 @@
                       <h5 class="card-title text-center">{{ event.event_name }}</h5>
                       <p class="card-text"><strong>Sport:</strong> {{ event.sport }}</p>
                       <p class="card-text"><strong>Date:</strong> {{ event.date.strftime('%Y-%m-%d') }}</p>
-                      <p class="card-text"><strong>Time:</strong> {{ event.time.strftime('%H:%M') }}</p>
+                      <p class="card-text"><strong> Start Time:</strong> {{ event.s_time.strftime('%H:%M') }}</p>
+                      <p class="card-text"><strong> End Time:</strong> {{ event.e_time.strftime('%H:%M') }}</p>
                       <p class="card-text">{{ event.notes }}</p>
                       <div class="btn-group mt-3">
                           <a href="{{ url_for('event_organizer', id=id, event_id=event.id) }}" class="btn btn-primary btn-sm">Modify</a>
+                          <a href="/set/event/{{event.id }}" class="btn btn-dark btn-sm">Update Event ID</a>
                           <a href="event-page-{{ event.id }}" class="btn btn-info btn-sm">Stream</a>
+                          <a href="/past/games/{{ event.id }}" class="btn btn-primary btn-sm">Past Event</a>
                       </div>
                       <!-- Form for deleting the event -->
                       <form method="POST" action="{{ url_for('events_eo', id=id) }}" class="mt-3">
