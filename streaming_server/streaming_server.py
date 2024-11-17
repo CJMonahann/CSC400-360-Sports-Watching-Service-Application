@@ -149,6 +149,14 @@ def handle_thread(header, addr, data, PATH):
           print(f"recieved data - {s_id}, {e_id} - {date} - {s_time} - {e_time}")
           update_events(s_id, e_id, date, s_time, e_time)
 
+     if(header == protocol.HEAD_DEE):
+          s_id = data["s_id"]
+          e_id = data["e_id"]
+          date = data["date"]
+          s_time = data["s_time"]
+          e_time = data["e_time"]
+          print(f"recieved data to DELETE - {s_id}, {e_id} - {date} - {s_time} - {e_time}")
+          del_event(s_id, e_id, date, s_time, e_time)
 
 def create_cam_buffer(s_buffers, mxid):
            if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
@@ -210,7 +218,17 @@ def update_events(s_id, e_id, date, s_time, e_time):
                #put the event name in the final sub directory
                time_dict[f"{s_time}-{e_time}"] = e_id
 
-     print(EVENTS)
+def del_event(s_id, e_id, date, s_time, e_time):
+     date = date.strftime('%Y-%m-%d')
+     time_range = f"{s_time}-{e_time}"
+
+     try:
+          event = EVENTS[s_id][date][time_range] #gets the event from its section of the EVENTS dict
+          if event == e_id: #if this is the event
+               time_dict = EVENTS[s_id][date]
+               del time_dict[time_range] #delete the inner-dict with the time-event pair
+     except:
+          pass
 
 def monitor_buffers(s_buffers, max_size):
      print('monitoring buffers')
@@ -325,11 +343,13 @@ def send_rec(PATH, mxid, addr, S_ID, e_id, DATE, s_time, e_time):
      else:
           #send an empty byte package to denote that the directory/reocrdings isn't/arent had
           print("NO RECORDING!!")
-          data_struct = {"data": None, "flag": True} #triggers event on web server to tell user no frames are had
-          sent_data = pickle.dumps(data_struct)
-          sending_socket.sendto(sent_data, addr)
+          i = 0
+          while i < 10: #this loop is needed for the Flask server to display an error frame for a few iterations
+               data_struct = {"data": None, "flag": True} #triggers event on web server to tell user no frames are had
+               sent_data = pickle.dumps(data_struct)
+               sending_socket.sendto(sent_data, addr)
+               i += 1
           sending_socket.close()        
-
 
 def return_frames(directory):
      with os.scandir(directory) as frames:

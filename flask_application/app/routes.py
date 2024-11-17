@@ -16,20 +16,28 @@ import PortCounter
 import socket
 import protocol
 
+
+def create_error_img(PATH, SPACE):
+    if os.path.exists(PATH): #if the path is correct, create the image, and store in the dictionary
+        with open(PATH, 'rb') as image:
+            image_data = image.read()
+        SPACE['IMG'] = image_data
+    else:
+        print("ERROR Image path not found")
+
 #global variables
 port_obj = PortCounter.PortCounter(int(os.getenv('FLASK_PORT')))
 img_path = os.path.join(app.root_path, 'static', 'images', 'server_messages', 'Camera_Error_Display.JPG')
+rec_path = os.path.join(app.root_path, 'static', 'images', 'server_messages', 'Recording_Error_Display.JPG')
 ERROR_IMG = {"IMG": b''}
+REC_IMG = {"IMG": b''}
 
-#create instance of the error image in memory to be displayed to users when a camera isn't available
+#create instance of the STREAM error image in memory to be displayed to users when a camera isn't available
 #this can be referenced by various users in real time
-if os.path.exists(img_path): #if the path is correct, create the image, and store in the dictionary
-    with open(img_path, 'rb') as image:
-        image_data = image.read()
-    ERROR_IMG['IMG'] = image_data
-else:
-    print("ERROR Image path not found")
-    
+create_error_img(img_path, ERROR_IMG)
+#create instance of the RECORDING error image in memory to be displayed to users when a camera isn't available
+#this can be referenced by various users in real time
+create_error_img(rec_path, REC_IMG)
 
 @app.route('/')
 @app.route('/home')
@@ -128,7 +136,7 @@ def recording(MXID):
         F_IP = os.getenv('FLASK_IP')
         F_Port = port_obj.get_port()  # Dynamically assign new internal-port number
         port_obj.inc_port()  # Increment to avoid duplicate ports
-        socket = client.Client(S_IP, S_Port, F_IP, F_Port, ERROR_IMG)
+        socket = client.Client(S_IP, S_Port, F_IP, F_Port, REC_IMG)
         return Response(socket.get_recording(MXID, s_id, e_id, date, s_time, e_time), mimetype='multipart/x-mixed-replace; boundary=frame')
     except:
         new_url = f'/video/CAM-<string:{MXID}>'
@@ -177,6 +185,35 @@ def send_event_info(id, e_id, date, s_time, e_time):
     sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sending_socket.sendto(msg,(S_IP, S_Port))
     sending_socket.close()
+
+def del_event(id):
+    id = int(id) #the event id
+    event = Event.query.get(id) #gets the event for the data needed
+    s_id = Site.query.get(event.s_id).s_id #gets the site ID configured on a camera server to match
+
+    #get streaming server information 
+    S_IP = os.getenv('STREAM_SERVER_IP')
+    S_Port = int(os.getenv('STREAM_SERVER_PORT'))
+
+    data_struct = {"header": protocol.HEAD_DEE, "data":{
+        "s_id": s_id,
+        "e_id": event.e_id,
+        "date": event.date,
+        "s_time": event.s_time,
+        "e_time": event.e_time
+    }}
+
+    print("DELETE - STREAMING SERVER")
+    print(data_struct)
+
+    
+    msg = pickle.dumps(data_struct)
+
+    #send message to streaming server to update information about a particular event
+    sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sending_socket.sendto(msg,(S_IP, S_Port))
+    sending_socket.close()
+    
     
 
 @app.route('/events/<int:id>')
@@ -198,12 +235,13 @@ def events_eo(id):
             # Handle event deletion
             event = Event.query.get(event_id)  # Use the retrieved event ID
             if event:
+                del_event(event_id)
                 db.session.delete(event)
                 db.session.commit()
                 print("Event deleted")
             else:
                 print("Event not found")  # Optional: handle case where event is not found
-            return redirect(url_for('events_eo', id=id))
+            return redirect(url_for('route_events', id=id))
         
         elif action == 'modify_event':
             # Handle event modification
@@ -222,7 +260,7 @@ def events_eo(id):
             else:
                 print("Event not found")  # Optional: handle case where event is not found
             
-            return redirect(url_for('events_eo', id=id))
+            return redirect(url_for('route_events', id=id))
 
     return render_template('events_eo.html', events=events, id=id)  # Pass events to the template
 
@@ -249,12 +287,13 @@ def events_sm(id):
             # Handle event deletion
             event = Event.query.get(event_id)  # Use the retrieved event ID
             if event:
+                del_event(event_id) #signal the streaming server to delete the event
                 db.session.delete(event)
                 db.session.commit()
                 print("Event deleted")
             else:
                 print("Event not found")  # Optional: handle case where event is not found
-            return redirect(url_for('events_sm', id=id))
+            return redirect(url_for('route_events', id=id))
         
         elif action == 'modify_event':
             # Handle event modification
@@ -273,7 +312,7 @@ def events_sm(id):
             else:
                 print("Event not found")  # Optional: handle case where event is not found
             
-            return redirect(url_for('events_sm', id=id))
+            return redirect(url_for('route_events', id=id))
     
     return render_template('site_manager.html', events=events, id=id)  # Pass events to the template
 
