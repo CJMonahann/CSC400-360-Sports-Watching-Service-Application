@@ -34,13 +34,19 @@
 
     <main class="d-flex justify-content-center align-items-center vh-100">
         <div class="card p-4" style="width: 400px; background-color: #1f2a36; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-            <h2 class="text-center mb-4" style="color: #ffffff;">Update Site ID</h2>
+            <h2 class="text-center mb-4" style="color: #ffffff;">Create a Site For {{name}}</h2>
             
             <form action="#" method="POST">
                 <div class="mb-3">
                     {{ form.hidden_tag() }}
+                    {{ form.name.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.name(class="form-control", placeholder="Enter Site Name") }}
+
                     {{ form.s_id.label(class="form-label", style="color: #dfe6e9;") }}
-                    {{ form.s_id(class="form-control", placeholder="Enter New Site ID") }}
+                    {{ form.s_id(class="form-control", placeholder="Enter Site ID") }}
+
+                    {{ form.about.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.about(class="form-control", placeholder="Enter Description") }}
                 </div>
                 
                 <div>

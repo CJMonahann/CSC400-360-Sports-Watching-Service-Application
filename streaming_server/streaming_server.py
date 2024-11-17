@@ -10,9 +10,11 @@ import Buffer
 import os
 from dotenv import load_dotenv
 from PIL import Image
+from datetime import datetime
 
 s_buffers = {}
 s_request = {}
+EVENTS = {}
 
 class CameraServer:
      def __init__(self, IP, port, path=""):
@@ -109,7 +111,7 @@ def handle_thread(header, addr, data, PATH):
 
           #Starts the process of recording frame data. 
           #This thread ends after the frame has been recorded
-          rec_thread = threading.Thread(target=rec_event, args=[PATH, data["event_id"], data["mxid"], data["num_frame"], data["frame"]])
+          rec_thread = threading.Thread(target=rec_event, args=[PATH, data["S_ID"], data["mxid"], data["num_frame"], data["frame"], data["DATE"], data["TIME"]])
           rec_thread.start()
           
           mxid = data["mxid"]
@@ -133,14 +135,28 @@ def handle_thread(header, addr, data, PATH):
           s_request[mxid].append(address)
 
      if (header == protocol.HEAD_REC):
-          print("starting sendback")
           port = data["port"] #the specific port of the client's host server. Can be different from tuples address recieved by the server.
-          mxid = data["mxid"]
-          event_id = data["id"]
           address = (addr[0], port) #addr[0] gets the IP address in the tuple address sent by a client socket
-          rec_req = threading.Thread(target=send_rec, args=[PATH, event_id, mxid, address])
+          rec_req = threading.Thread(target=send_rec, args=[PATH, data["mxid"], address, data["s_id"], data["e_id"], data["date"], data["s_time"], data["e_time"]])
           rec_req.start()
 
+     if(header == protocol.HEAD_UPE):
+          s_id = data["s_id"]
+          e_id = data["e_id"]
+          date = data["date"]
+          s_time = data["s_time"]
+          e_time = data["e_time"]
+          print(f"recieved data - {s_id}, {e_id} - {date} - {s_time} - {e_time}")
+          update_events(s_id, e_id, date, s_time, e_time)
+
+     if(header == protocol.HEAD_DEE):
+          s_id = data["s_id"]
+          e_id = data["e_id"]
+          date = data["date"]
+          s_time = data["s_time"]
+          e_time = data["e_time"]
+          print(f"recieved data to DELETE - {s_id}, {e_id} - {date} - {s_time} - {e_time}")
+          del_event(s_id, e_id, date, s_time, e_time)
 
 def create_cam_buffer(s_buffers, mxid):
            if mxid not in s_buffers: #check to see if space is made in global-buffer space fro camera
@@ -167,6 +183,53 @@ def send_buffer_frames(s_buffers, s_requests, packet_delay, buff_idle):
           except:
                continue
 
+def update_events(s_id, e_id, date, s_time, e_time):
+     date = date.strftime('%Y-%m-%d')
+
+     if s_id not in EVENTS: #check to see if space is made in global-buffer space fro camera
+          EVENTS[s_id] = {}
+          #then, update the events, s_id, with sub-directory info pertaining to an event
+          date_dict = EVENTS[s_id]
+          date_dict[date] = {}
+
+          #to the dictionary of dates, add the time range of the new event
+          time_dict = date_dict[date]
+          time_dict[f"{s_time}-{e_time}"] = {}
+
+          #put the event name in the final sub directory
+          time_dict[f"{s_time}-{e_time}"] = e_id
+     else: #site id already had, so just add new entry to the dictionary under the site ID
+          #then, update the events, s_id, with sub-directory info pertaining to an event
+          date_dict = EVENTS[s_id]
+          if date in date_dict: #if we are adding a new event on the same date
+               #to the dictionary of dates, add the time range of the new event
+               time_dict = date_dict[date]
+               time_dict[f"{s_time}-{e_time}"] = {}
+
+               #put the event name in the final sub directory
+               time_dict[f"{s_time}-{e_time}"] = e_id
+          else: #we have a new date, start a new entry at the site-ID level
+               date_dict[date] = {}
+
+               #to the dictionary of dates, add the time range of the new event
+               time_dict = date_dict[date]
+               time_dict[f"{s_time}-{e_time}"] = {}
+
+               #put the event name in the final sub directory
+               time_dict[f"{s_time}-{e_time}"] = e_id
+
+def del_event(s_id, e_id, date, s_time, e_time):
+     date = date.strftime('%Y-%m-%d')
+     time_range = f"{s_time}-{e_time}"
+
+     try:
+          event = EVENTS[s_id][date][time_range] #gets the event from its section of the EVENTS dict
+          if event == e_id: #if this is the event
+               time_dict = EVENTS[s_id][date]
+               del time_dict[time_range] #delete the inner-dict with the time-event pair
+     except:
+          pass
+
 def monitor_buffers(s_buffers, max_size):
      print('monitoring buffers')
 
@@ -178,37 +241,88 @@ def monitor_buffers(s_buffers, max_size):
           except:
                continue
 
-def rec_event(PATH, event_id, mxid, num_frame, data):
-     #define various paths
-     event_dir = os.path.join(PATH, event_id)
-     cam_dir = os.path.join(event_dir, mxid)
-     FRAME = "Frame-"
+def has_event(S_ID, DATE, TIME):
+     #check to see whether the site ID is in the dicitonary holding all server EVENTS
+     if S_ID in EVENTS: #if the SITE is provided by the streaming server, look for event
+          dates_dict = EVENTS[S_ID]
+          if DATE in dates_dict:
+               times_dict = dates_dict[DATE]
+               #iterate through times dict to find the correct time range, and therefore needed event
+               for time_range in times_dict.keys():
+                    if within_range(time_range, TIME): #checks whether current time is within the time range
+                         return time_range, times_dict[time_range] #returns time range and the event ID had on the flask server
+     else: #site not had, or not yet had, by streaming server
+          return None, None
 
-     #check to see if event directory has been created
-     if not(os.path.exists(event_dir) and os.path.isdir(event_dir)): #if the event dir doesnt exist, create it
-          os.makedirs(event_dir, exist_ok= True)
+def within_range(time_range, curr_time):
+    new_time = datetime.strptime(curr_time,"%H:%M:%S").time()
+
+    #split the time range string from the dictionary into start time and end time
+    s_str, e_str = time_range.split('-')
+
+    #create datetime objects to compare
+    s_time = datetime.strptime(s_str,"%H:%M:%S").time()
+    e_time = datetime.strptime(e_str,"%H:%M:%S").time()
+
+    #return boolean value as to whether current time is within the range
+    return s_time <= new_time <= e_time
+
+def rec_event(PATH, S_ID, mxid, num_frame, data, DATE, TIME):
+     #check to see whether we can record event
+     time_range, event = has_event(S_ID, DATE, TIME)
+
+     if  time_range and event: #if the event is had by the streaming server from the flask app, create a directory to store video
+          time_range = time_range.replace(":", "-") #needed, as we can't create a directory with ':'
+          S_dir = os.path.join(PATH, S_ID)
+          D_dir = os.path.join(S_dir, DATE)
+          T_dir = os.path.join(D_dir, time_range)
+          E_dir = os.path.join(T_dir, event)
+          cam_dir = os.path.join(E_dir, mxid)
+          FRAME = "Frame-"
+
+          #check to see if site directory has been created
+          if not(os.path.exists(S_dir) and os.path.isdir(S_dir)): #if the event dir doesnt exist, create it
+               os.makedirs(S_dir, exist_ok= True)
+          
+          #check to see if a date sub-directory within an event exist
+          if not(os.path.exists(D_dir) and os.path.isdir(D_dir)): #if the date  dir doesnt exist, create it
+               os.makedirs(D_dir, exist_ok= True)
+
+          #check to see if a date sub-directory within an event exist
+          if not(os.path.exists(T_dir) and os.path.isdir(T_dir)): #if the time range dir doesnt exist, create it
+               os.makedirs(T_dir, exist_ok= True)
+
+          if not(os.path.exists(E_dir) and os.path.isdir(E_dir)): #if the time range dir doesnt exist, create it
+               os.makedirs(E_dir, exist_ok= True)
+
+          #check to see if a camera sub-directory within an event exist
+          if not(os.path.exists(cam_dir) and os.path.isdir(cam_dir)): #if the time range dir doesnt exist, create it
+               os.makedirs(cam_dir, exist_ok= True)
+
+          #add the frame to the appropreate cam sub-directory using the name convention
+          curr_frame = FRAME + num_frame + ".jpg"
+          curr_path = os.path.join(cam_dir, curr_frame)
+
+          dec_data = base64.b64decode(data, ' /') #this is the frame data
+
+          with open(curr_path, "wb") as frame:
+               frame.write(dec_data)
      
-     #check to see if a camera sub-directory within an event exist
-     if not(os.path.exists(cam_dir) and os.path.isdir(cam_dir)): #if the event dir doesnt exist, create it
-          os.makedirs(cam_dir, exist_ok= True)
-
-     #add the frame to the appropreate cam sub-directory using the name convention
-     curr_frame = FRAME + num_frame + ".jpg"
-     curr_path = os.path.join(cam_dir, curr_frame)
-
-     dec_data = base64.b64decode(data, ' /') #this is the frame data
-
-     with open(curr_path, "wb") as frame:
-          frame.write(dec_data)
-     
-def send_rec(PATH, event_id, mxid, addr):
+def send_rec(PATH, mxid, addr, S_ID, e_id, DATE, s_time, e_time):
      sending_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+     time_range = f"{s_time}-{e_time}"
+     time_range = time_range.replace(":", "-") #needed, as we can't create a directory with ':'
+     date = DATE.strftime('%Y-%m-%d')
+     S_dir = os.path.join(PATH, S_ID)
+     D_dir = os.path.join(S_dir, date)
+     T_dir = os.path.join(D_dir, time_range)
+     E_dir = os.path.join(T_dir, e_id)
+     cam_dir = os.path.join(E_dir, mxid)
 
-     #check to see if the event directory, and needed camera sub-directory exist
-     event_dir = os.path.join(PATH, event_id)
-     cam_dir = os.path.join(event_dir, mxid)
-
-     if (os.path.exists(event_dir) and os.path.isdir(event_dir)) and \
+     if (os.path.exists(S_dir) and os.path.isdir(S_dir)) and \
+     (os.path.exists(D_dir) and os.path.isdir(D_dir)) and \
+     (os.path.exists(T_dir) and os.path.isdir(T_dir)) and \
+     (os.path.exists(E_dir) and os.path.isdir(E_dir)) and \
      (os.path.exists(cam_dir) and os.path.isdir(cam_dir)): #if the recording is had on the server
           
           frames = return_frames(cam_dir) #a list of all frame names had in the directory
@@ -221,16 +335,21 @@ def send_rec(PATH, event_id, mxid, addr):
                     res_frame = imutils.resize(new_frame, width=400)
                     _, final_frame = cv2.imencode('.jpg', res_frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
                     byte_packet = base64.b64encode(final_frame) #encode so that it fits in UDP buffer space
-                    data_struct = {"data": byte_packet}
+                    data_struct = {"data": byte_packet, "flag": False}
                     sent_data = pickle.dumps(data_struct)
                     sending_socket.sendto(sent_data, addr)
+          sending_socket.close()
                     
      else:
           #send an empty byte package to denote that the directory/reocrdings isn't/arent had
-          data_struct = {"data": b""} #triggers event on web server to tell user no frames are had
-          sent_data = pickle.dumps(data_struct)
-          sending_socket.sendto(sent_data, addr)          
-
+          print("NO RECORDING!!")
+          i = 0
+          while i < 10: #this loop is needed for the Flask server to display an error frame for a few iterations
+               data_struct = {"data": None, "flag": True} #triggers event on web server to tell user no frames are had
+               sent_data = pickle.dumps(data_struct)
+               sending_socket.sendto(sent_data, addr)
+               i += 1
+          sending_socket.close()        
 
 def return_frames(directory):
      with os.scandir(directory) as frames:

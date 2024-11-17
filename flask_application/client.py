@@ -39,15 +39,22 @@ class Client:
     def get_error_img(self):
          return self.ERROR_IMG
     
-    def get_recording(self, camera, site_id):
+    def get_recording(self, camera, s_id, e_id, date, s_time, e_time):
           server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
           server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, self.buffer_size())
           server.bind(self.get_flask_addr())
 
           #create package to be sent to streaming server for a specific camera
-          data_struct = {"header": protocol.HEAD_REC, "data":{"port": self.flask_port(), 
-                                                                  "mxid": camera,
-                                                                  "id": site_id}}
+          data_struct = {"header": protocol.HEAD_REC, "data":
+                         {"port": self.flask_port(), 
+                          "mxid": camera,
+                          "s_id": s_id,
+                          "e_id": e_id,
+                          "date": date,
+                          "s_time": s_time,
+                          "e_time": e_time
+                          }
+                         }
           msg = pickle.dumps(data_struct)
 
           #send message to streaming server for specific camera
@@ -59,16 +66,15 @@ class Client:
                rec_data, addr = server.recvfrom(self.buffer_size())
                packet = pickle.loads(rec_data)
                data = packet["data"]
+               Flag = packet["flag"]
 
                if data:
                     dec_data = base64.b64decode(packet["data"], ' /') #this is the frame data
-               else:
+                    yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
+               elif Flag:
                     dec_data = self.get_error_img()
+                    yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
 
-               yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
-
-               if cv2.waitKey(1) == ord('q'):
-                         break
     
     def get_camera(self, camera):
         server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -96,6 +102,3 @@ class Client:
             elif Flag:
                  dec_data = self.get_error_img()
                  yield(b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + dec_data + b'\r\n')
-
-            if cv2.waitKey(1) == ord('q'):
-                    break

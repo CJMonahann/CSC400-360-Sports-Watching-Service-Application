@@ -19,10 +19,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="#" style="color: #dfe6e9;">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" style="color: #dfe6e9;">Past Games</a>
+                        <a class="nav-link active" aria-current="page" href="/return/home" style="color: #dfe6e9;">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" style="color: #dfe6e9;">Account</a>
@@ -34,13 +31,25 @@
 
     <main class="d-flex justify-content-center align-items-center vh-100">
         <div class="card p-4" style="width: 400px; background-color: #1f2a36; border-radius: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-            <h2 class="text-center mb-4" style="color: #ffffff;">Update Site ID</h2>
+            <h2 class="text-center mb-4" style="color: #ffffff;">Create an Organization</h2>
             
             <form action="#" method="POST">
                 <div class="mb-3">
                     {{ form.hidden_tag() }}
-                    {{ form.s_id.label(class="form-label", style="color: #dfe6e9;") }}
-                    {{ form.s_id(class="form-control", placeholder="Enter New Site ID") }}
+                    {{ form.name.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.name(class="form-control", placeholder="Enter The Organization's Name") }}
+
+                    {{ form.street.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.street(class="form-control", placeholder="Enter Street") }}
+
+                    {{ form.city.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.city(class="form-control", placeholder="Enter City") }}
+
+                    {{ form.state.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.state(class="form-control", placeholder="State") }}
+
+                    {{ form.about.label(class="form-label", style="color: #dfe6e9;") }}
+                    {{ form.about(class="form-control", placeholder="State") }}
                 </div>
                 
                 <div>

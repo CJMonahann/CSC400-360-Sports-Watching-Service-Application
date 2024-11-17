@@ -63,20 +63,39 @@ def create_site_manager(target, connection, **kw):
 event.listen(User.__table__, "after_create", create_site_manager)
 
 
+class Organization(db.Model):
+    __tablename__ = 'Organization'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    street = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(255), nullable=False)
+    state = db.Column(db.String(255), nullable=False)
+    about = db.Column(db.String(255))
+
+class Site(db.Model):
+    __tablename__ = 'Site'
+    id = db.Column(db.Integer, primary_key=True)
+    org_id = db.Column(db.Integer, ForeignKey('Organization.id', ondelete='CASCADE'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    about = db.Column(db.String(100))
+    s_id = db.Column(db.String(50))
+
 class Event(db.Model):
     __tablename__ = 'Event'
     id = db.Column(db.Integer, primary_key=True)
+    s_id = db.Column(db.Integer, ForeignKey('Site.id', ondelete='CASCADE'), nullable=False)
     event_name = db.Column(db.String(100), nullable=False)
     sport = db.Column(db.String(50), nullable=False)
     date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time, nullable=False)
+    s_time = db.Column(db.Time, nullable=False) #start time
+    e_time = db.Column(db.Time, nullable=False) #end time
     notes = db.Column(db.Text)
     port = db.Column(db.Integer)
     ip = db.Column(db.String(50))
-    site = db.Column(db.String(50))
+    e_id = db.Column(db.String(50)) #event ID
     
 class Camera(db.Model):
     __tablename__ = 'Camera'
     id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(db.Integer, ForeignKey('Event.id', ondelete='CASCADE'), nullable=False)
+    s_id = db.Column(db.Integer, ForeignKey('Site.id', ondelete='CASCADE'), nullable=False)
     mxid = db.Column(db.String(50)) #the actual ID inputted by an admin, had by each camera
