@@ -15,6 +15,30 @@ class User(db.Model):
     is_eo = db.Column(db.Boolean, unique=False, default=False)
     is_sm = db.Column(db.Boolean, unique=False, default=False)
 
+
+# Function to create an general user
+def create_general_user(target, connection, **kw):
+    existing_general_user = connection.execute(
+        db.select(User).where(User.username == "johndoe")
+    ).first()
+    
+    if not existing_general_user:
+        general_user = User(
+            username="johndoe",
+            email="johndoe@gmail.com",
+            password="generaluser",  # Plaintext password for example
+            is_eo=False,
+            is_sm = False
+        )
+        connection.execute(db.insert(User), [
+            {"username": general_user.username, "email": general_user.email, 
+             "password": general_user.password}
+        ])
+        print("general_user created successfully.")
+
+# Attach the admin creation function to the 'after_create' event on the User table
+event.listen(User.__table__, "after_create", create_general_user)
+
 # Function to create an admin user
 
 def create_event_organizer(target, connection, **kw):
@@ -26,7 +50,7 @@ def create_event_organizer(target, connection, **kw):
         event_organizer = User(
             username="eventorganizer",
             email="eventorganizer@gmail.com",
-            password="password",  # Plaintext password for example
+            password="eventorganizer",  # Plaintext password for example
             is_eo=True,
             is_sm = False
         )
@@ -49,7 +73,7 @@ def create_site_manager(target, connection, **kw):
         site_manager = User(
             username="sitemanager",
             email="sitemanager@gmail.com",
-            password="password",  # Plaintext password for example
+            password="sitemanager",  # Plaintext password for example
             is_eo =False,
             is_sm= True
         )
