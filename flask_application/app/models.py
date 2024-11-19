@@ -26,7 +26,7 @@ def create_general_user(target, connection, **kw):
         general_user = User(
             username="johndoe",
             email="johndoe@gmail.com",
-            password="generaluser",  # Plaintext password for example
+            password="generaluser1",  # Plaintext password for example
             is_eo=False,
             is_sm = False
         )
@@ -50,7 +50,7 @@ def create_event_organizer(target, connection, **kw):
         event_organizer = User(
             username="eventorganizer",
             email="eventorganizer@gmail.com",
-            password="eventorganizer",  # Plaintext password for example
+            password="eventorganizer1",  # Plaintext password for example
             is_eo=True,
             is_sm = False
         )
@@ -73,7 +73,7 @@ def create_site_manager(target, connection, **kw):
         site_manager = User(
             username="sitemanager",
             email="sitemanager@gmail.com",
-            password="sitemanager",  # Plaintext password for example
+            password="sitemanager1",  # Plaintext password for example
             is_eo =False,
             is_sm= True
         )

@@ -23,6 +23,16 @@ class eventOrganizerForm(FlaskForm):
     notes = TextAreaField("Additional Notes")
     submit = SubmitField("Submit")
 
+class modifyForm(FlaskForm):
+    event_name = StringField("Event Name")
+    sport = StringField("Sport")
+    date = DateField("Date")
+    s_time = TimeField("Start Time") #start time
+    e_time = TimeField("End Time") #end time
+    e_id = StringField("Event ID") #event ID
+    notes = TextAreaField("Additional Notes")
+    submit = SubmitField("Submit")
+
 class eventsEOForm(FlaskForm):
     modify = SubmitField("Modify")
     delete = SubmitField("Delete")

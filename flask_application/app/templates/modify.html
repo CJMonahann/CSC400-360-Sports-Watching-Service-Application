@@ -4,9 +4,9 @@
 {% block content %}
 <main class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #004aad, #0a2540);">
     <div class="card p-3" style="width: 500px; border-radius: 20px; background-color: #1f2a36; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);">
-        <h2 class="text-center mb-3" style="color: #ffffff; font-weight: bold;">Event Organizer</h2>
+        <h2 class="text-center mb-3" style="color: #ffffff; font-weight: bold;"> Modify Event</h2>
         
-        <form action="/modify/{{id}}" method="POST">
+        <form action="{{ url_for('modify', id=id) }}" method="POST">
             {{ form.hidden_tag() }} <!-- CSRF token and hidden fields -->
 
             <div class="mb-3">

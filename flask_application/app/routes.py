@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify, Response, session
 from app import app, db
 from app.models import User, Event, Camera, Site, Organization #imports like this will import the databse relations we have made in the 'models.py' page
-from app.forms import signUpForm, loginForm, eventOrganizerForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm, UpdateSiteForm, UpdateEventForm #makes forms functional in routes
+from app.forms import signUpForm, loginForm, eventOrganizerForm,modifyForm, eventsEOForm, SiteManagerSettingsForm, eventsSMForm, CameraForm, SiteForm, OrgForm, UpdateSiteForm, UpdateEventForm #makes forms functional in routes
 import numpy as np  # numpy - manipulate the packet data returned by depthai
 import cv2  # opencv - display the video stream
 #import depthai  # depthai - access the camera and its data packets
@@ -412,3 +412,40 @@ def event_ID(id):
 @app.route('/return/home')
 def return_home():
     return redirect(url_for('index'))
+
+@app.route('/modify/<int:id>', methods=['GET', 'POST'])
+def modify(id):
+    # Fetch the event from the database using the id
+    event = Event.query.get_or_404(id)
+    form = modifyForm()
+    
+    if request.method == 'POST' and form.validate_on_submit():
+        # Update event fields with form data
+        event.event_name = form.event_name.data
+        event.sport = form.sport.data
+        event.date = form.date.data
+        event.s_time = form.s_time.data
+        event.e_time = form.e_time.data
+        event.notes = form.notes.data
+
+        db.session.commit()  # Save changes to the database
+        
+        print('Event updated successfully!')
+        if session['is_eo']:
+            return redirect(url_for('events_eo', id=id))
+        elif session['is_sm']:
+            return redirect(url_for('events_sm', id=id))
+        
+
+    # Pre-fill the form with event data for GET
+    elif request.method == 'GET':
+        form.event_name.data = event.event_name
+        form.sport.data = event.sport
+        form.date.data = event.date
+        form.s_time.data = event.s_time
+        form.e_time.data = event.e_time
+        form.notes.data = event.notes
+
+    # Render the modification form
+    return render_template('modify.html', form=form, id=id)
+
