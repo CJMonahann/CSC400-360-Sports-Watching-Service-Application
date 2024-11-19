@@ -449,3 +449,9 @@ def modify(id):
     # Render the modification form
     return render_template('modify.html', form=form, id=id)
 
+@app.route('/logout')
+def logout():
+    # Clear the user session
+    session.pop('username', None)
+    # Redirect the user to the login page
+    return redirect(url_for('login'))
