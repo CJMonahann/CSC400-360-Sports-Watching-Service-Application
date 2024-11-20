@@ -1,0 +1,51 @@
+{% extends "parent-templates/base-content.html" %}
+{% block title %} Modify {% endblock %}
+
+{% block content %}
+<main class="d-flex justify-content-center align-items-center vh-100" style="background: linear-gradient(135deg, #004aad, #0a2540);">
+    <div class="card p-3" style="width: 500px; border-radius: 20px; background-color: #1f2a36; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);">
+        <h2 class="text-center mb-3" style="color: #ffffff; font-weight: bold;"> Modify Event</h2>
+        
+        <form action="{{ url_for('modify', id=id) }}" method="POST">
+            {{ form.hidden_tag() }} <!-- CSRF token and hidden fields -->
+
+            <div class="mb-3">
+                {{ form.event_name.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.event_name(class_="form-control", placeholder="Enter event name", style="border-radius: 8px;") }}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.sport.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.sport(class_="form-control", placeholder="Enter sport", style="border-radius: 8px;") }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.date.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.date(class_="form-control", style="border-radius: 8px;") }}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.s_time.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.s_time(class_="form-control", style="border-radius: 8px;") }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.e_time.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.e_time(class_="form-control", style="border-radius: 8px;") }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.e_id.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.e_id(class_="form-control", placeholder="Create an Event ID", rows="3", style="border-radius: 8px;") }}
+            </div>
+
+            <div class="mb-3">
+                {{ form.notes.label(class_="form-label", style="color: #dfe6e9; font-size: 1rem; font-weight: 600;") }}
+                {{ form.notes(class_="form-control", placeholder="Enter any additional notes", rows="3", style="border-radius: 8px;") }}
+            </div>
+
+            <button type="submit" class="btn btn-light w-100 mt-3" style="border-radius: 8px; font-weight: bold; padding: 10px;">Submit</button>
+        </form>
+    </div>
+</main>
+{% endblock %}
